@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Piano – Stian Norgård Aase</title>
 <meta name="description" content="Et piano i nettleseren med piano-, orgel- og synthlyd, og en enkel innføring i akkordene C, F, Am og G.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../fonter/fonter.css">
 <style>
 /* Piano 05.10.26. Lyden lages med Web Audio i nettleseren, så siden laster ingen lydfiler og lagrer ingenting.
@@ -24,6 +25,8 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 header.top { border-bottom: 1px solid var(--line); }
 header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-top: .8rem; padding-bottom: .8rem; }
 header.top a { color: var(--ink); text-decoration: none; font-weight: 600; }
+header.top .brand { display: inline-flex; align-items: center; gap: .55rem; font-family: var(--display); font-size: 1.15rem; }
+header.top .brand svg { width: 34px; height: 34px; flex: none; }
 header.top nav { display: flex; gap: 1rem; font-size: .95rem; }
 h1 { font-family: var(--display); font-weight: 600; font-size: clamp(2rem, 5vw, 2.8rem); line-height: 1.1; margin: 1.6rem 0 .4rem; }
 h2 { font-family: var(--display); font-weight: 600; font-size: 1.5rem; margin: 0 0 .4rem; }
@@ -75,7 +78,7 @@ footer a { color: inherit; }
 </style>
 </head>
 <body>
-<header class="top"><div class="wrap"><a href="../">Stian N. Aase</a><nav><a href="../musikk/">Musiker</a><a href="./">Lærer</a></nav></div></header>
+<header class="top"><div class="wrap"><a class="brand" href="../"><svg viewBox="0 0 32 32" role="img" aria-label="Kritt-tavle: en halvnote er lik to fjerdedeler"><rect x="1" y="2" width="30" height="23" rx="3" fill="#8a6a3e"/><rect x="3" y="4" width="26" height="19" rx="1.5" fill="#2b3a35"/><rect x="0" y="25" width="32" height="3.2" rx="1.6" fill="#6f5430"/><rect x="19" y="23.6" width="6" height="2" rx="1" fill="#f4efe6"/><rect x="26" y="23.8" width="3.6" height="1.8" rx=".9" fill="#e8806f"/><ellipse cx="9" cy="17" rx="2.1" ry="1.55" transform="rotate(-20 9 17)" fill="none" stroke="#f4efe6" stroke-width="1"/><path d="M10.9 16.7 V8" stroke="#f4efe6" stroke-width="1" stroke-linecap="round"/><text x="15.6" y="17.2" text-anchor="middle" font-family="Figtree, sans-serif" font-weight="600" font-size="8" fill="#f4efe6">=</text><text x="21.5" y="13.4" text-anchor="middle" font-family="Figtree, sans-serif" font-weight="600" font-size="6" fill="#e8806f">2</text><path d="M19 15 H24" stroke="#e8806f" stroke-width="1"/><text x="21.5" y="20.8" text-anchor="middle" font-family="Figtree, sans-serif" font-weight="600" font-size="6" fill="#e8806f">4</text></svg>Stian N. Aase</a><nav><a href="../musikk/">Musiker</a><a href="./">Lærer</a></nav></div></header>
 <main class="wrap">
   <h1>Piano</h1>
   <p class="lead">Spill med musa, fingeren eller tastaturet. Du kan holde inne flere toner samtidig. Nederst på siden kan du lære akkordene C, F, Am og G.</p>
