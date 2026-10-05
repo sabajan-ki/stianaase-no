@@ -169,6 +169,9 @@ p { margin: 0 0 1rem; }
 .tool .name { font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
 .tool .name svg { width: 16px; height: 16px; color: var(--accent, var(--red)); flex: none; }
 .tool .meta { color: var(--ink-soft); font-size: .95rem; margin-top: .25rem; }
+.tool .shot { display: block; width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line); margin-bottom: .8rem; }
+.tool .ide { font-size: .95rem; margin-top: .6rem; padding-top: .6rem; border-top: 1px dashed var(--line); color: var(--ink); }
+.kildefelt { margin-top: 1.2rem; }
 
 /* ---------- kontakt / fot ---------- */
 .contact { background: var(--night); color: var(--on-night); border-radius: var(--radius); padding: clamp(1.6rem, 5vw, 2.6rem); display: grid; gap: 1.2rem; align-items: center; grid-template-columns: 1fr; position: relative; overflow: hidden; }
