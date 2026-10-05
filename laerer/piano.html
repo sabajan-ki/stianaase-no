@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piano – Stian Norgård Aase</title>
+<meta name="description" content="Et piano i nettleseren med piano-, orgel- og synthlyd, og en enkel innføring i akkordene C-dur, F-dur, a-moll og G-dur.">
+<link rel="stylesheet" href="../fonter/fonter.css">
+<style>
+/* Piano 05.10.26. Lyden lages med Web Audio i nettleseren, så siden laster ingen lydfiler og lagrer ingenting.
+   Fargene følger stianaase.no («Belg»), mørk modus følger maskinen. */
+:root {
+  --paper: #f4efe6; --card: #fffaf2; --ink: #1f1b2b; --ink-soft: #4a4458; --muted: #6f6878; --line: #ddd3c4;
+  --red: #b3322a; --gold: #c98f22; --teal: #2f6f73; --white-key: #fffdf8; --black-key: #1f1b2b; --lit: #f2c35b; --chord: #9fd0c9;
+  --display: "Fraunces", Georgia, serif; --sans: "Figtree", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --paper: #17141f; --card: #221e2c; --ink: #f1ebe0; --ink-soft: #cfc6b8; --muted: #a59d93; --line: #3a3446;
+          --white-key: #ece6da; --black-key: #0d0b12; --lit: #e9b44c; --chord: #5fa8a0; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 1.05rem; line-height: 1.55; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+header.top { border-bottom: 1px solid var(--line); }
+header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-top: .8rem; padding-bottom: .8rem; }
+header.top a { color: var(--ink); text-decoration: none; font-weight: 600; }
+header.top nav { display: flex; gap: 1rem; font-size: .95rem; }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(2rem, 5vw, 2.8rem); line-height: 1.1; margin: 1.6rem 0 .4rem; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 1.5rem; margin: 0 0 .4rem; }
+.lead { color: var(--ink-soft); max-width: 40rem; margin: 0 0 1.2rem; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; margin: 0 0 1rem; }
+.controls label { display: inline-flex; align-items: center; gap: .4rem; font-weight: 600; font-size: .95rem; }
+select, button { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: .4rem .9rem; cursor: pointer; }
+button:hover, select:hover, button:focus-visible, select:focus-visible { border-color: var(--red); outline: none; }
+button:focus-visible, select:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 35%, transparent); }
+button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.oktav { display: inline-flex; align-items: center; gap: .4rem; }
+.oktav span { min-width: 6.5em; text-align: center; font-weight: 600; font-size: .95rem; }
+
+/* Klaviaturet: 11 hvite tangenter, de svarte ligger oppå med prosentplassering */
+.piano { position: relative; height: clamp(170px, 30vw, 260px); margin: 0 0 .6rem; user-select: none; -webkit-user-select: none; touch-action: none; }
+.key { position: absolute; top: 0; border: 1px solid var(--ink); display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+       padding: 0 0 .5rem; font-weight: 700; cursor: pointer; }
+.key.white { height: 100%; background: var(--white-key); color: var(--ink); border-radius: 0 0 8px 8px; z-index: 1; }
+.key.black { height: 62%; background: var(--black-key); color: #f1ebe0; border-radius: 0 0 6px 6px; z-index: 2; font-size: .8rem; }
+.key .navn { font-size: clamp(.8rem, 1.8vw, 1.05rem); }
+.key .tast { font-size: clamp(.62rem, 1.3vw, .8rem); font-weight: 600; opacity: .55; margin-top: .15rem; }
+.key.chord { background: var(--chord); color: var(--ink); }
+.key.black.chord { background: var(--teal); color: #fff; }
+.key.down { background: var(--lit) !important; color: var(--ink) !important; }
+.key .finger { position: absolute; top: .5rem; left: 50%; transform: translateX(-50%); width: 1.7em; height: 1.7em; border-radius: 50%;
+               background: var(--red); color: #fff; display: grid; place-items: center; font-size: .85rem; }
+.key.white .finger { top: auto; bottom: 3.4rem; }
+.skjul-navn .key .navn, .skjul-tast .key .tast { visibility: hidden; }
+.hjelp { color: var(--muted); font-size: .92rem; margin: 0 0 1.6rem; }
+kbd { font: inherit; font-weight: 600; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0 .3em; background: var(--card); }
+
+section.akkorder { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1.1rem 1.2rem 1.2rem; margin: 0 0 2rem; }
+.valg { display: flex; flex-wrap: wrap; gap: .5rem; margin: .4rem 0 .9rem; }
+.valg button { font-weight: 700; }
+.forklaring { margin: 0 0 .7rem; }
+.toner { font-family: var(--display); font-size: 1.6rem; font-weight: 600; margin: .1rem 0 .3rem; }
+.status { min-height: 1.6em; font-weight: 700; margin: .6rem 0 0; }
+.status.ok { color: var(--teal); }
+.rekke { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0 0; }
+.rekke span { border: 1px solid var(--line); border-radius: 8px; padding: .2rem .7rem; font-weight: 700; }
+.rekke span.naa { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.rekke span.ferdig { background: var(--chord); border-color: var(--chord); color: var(--ink); }
+footer { border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; padding: 1rem 0 2rem; }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; }
+footer a { color: inherit; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap"><a href="../">Stian N. Aase</a><nav><a href="../musikk/">Musiker</a><a href="./">Lærer</a></nav></div></header>
+<main class="wrap">
+  <h1>Piano</h1>
+  <p class="lead">Spill med musa, fingeren eller tastaturet. Du kan holde inne flere toner samtidig, og lære deg de fire akkordene C-dur, F-dur, a-moll og G-dur nederst.</p>
+
+  <div class="controls">
+    <label>Lyd <select id="lyd"><option value="piano">Piano</option><option value="orgel">Orgel</option><option value="synth">Synth</option></select></label>
+    <span class="oktav"><button id="ned" type="button" aria-label="En oktav ned">−</button><span id="oktavTekst">Oktav 4</span><button id="opp" type="button" aria-label="En oktav opp">+</button></span>
+    <button id="navnBtn" type="button" class="on" aria-pressed="true">Tonenavn</button>
+    <button id="tastBtn" type="button" class="on" aria-pressed="true">Tastaturbokstaver</button>
+  </div>
+
+  <div class="piano" id="piano" role="group" aria-label="Klaviatur fra C til F"></div>
+  <p class="hjelp">Hvite tangenter: <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> <kbd>Ø</kbd> <kbd>Æ</kbd> gir C til F.
+    Svarte tangenter: <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> <kbd>O</kbd> <kbd>P</kbd>. <kbd>Z</kbd> og <kbd>X</kbd> flytter en oktav ned og opp.
+    Tonene har norske navn: H er den hvite tangenten under C, og B er den svarte under den.</p>
+
+  <section class="akkorder" aria-labelledby="akkTittel">
+    <h2 id="akkTittel">Akkorder</h2>
+    <p class="forklaring">En akkord er tre eller flere toner som klinger samtidig. Velg en akkord, se hvilke tangenter den har, og spill den selv.</p>
+    <div class="valg" id="akkValg"></div>
+    <div id="akkInfo" hidden>
+      <p class="toner" id="akkToner"></p>
+      <p class="forklaring" id="akkForklaring"></p>
+      <div class="controls">
+        <button id="horSammen" type="button">Hør akkorden</button>
+        <button id="horBrutt" type="button">Hør tonene etter hverandre</button>
+        <button id="fingerBtn" type="button" aria-pressed="false">Vis fingersetting</button>
+      </div>
+    </div>
+    <h2 style="margin-top:1rem">Øv på en akkordrekke</h2>
+    <p class="forklaring">Spill akkordene i rekkefølge. Når en akkord sitter, går tavla videre til neste.</p>
+    <div class="controls">
+      <label>Rekke <select id="rekkeValg"><option value="">Velg</option><option value="C F G C">C – F – G – C</option><option value="C G a F">C – G – a – F (mye brukt i pop)</option></select></label>
+    </div>
+    <div class="rekke" id="rekke"></div>
+    <p class="status" id="status" aria-live="polite"></p>
+  </section>
+</main>
+<footer><div class="wrap"><span>Piano · lyden lages i nettleseren, og ingenting lagres</span><a href="./">stianaase.no/laerer</a></div></footer>
+
+<script>
+(function () {
+  "use strict";
+  const $ = s => document.querySelector(s);
+
+  /* ---------- Tonene ---------- */
+  // Halvtoner fra C: norske navn (H-systemet, B = svart tangent under H)
+  const NAVN = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "B", "H"];
+  // Klaviaturet går fra C til F en oktav over (17 halvtoner). Tastene følger fysisk plassering (e.code), så de virker på alle oppsett.
+  const HVITE = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17];
+  const SVARTE = [1, 3, 6, 8, 10, 13, 15];
+  const KODE = { KeyA: 0, KeyW: 1, KeyS: 2, KeyE: 3, KeyD: 4, KeyF: 5, KeyT: 6, KeyG: 7, KeyY: 8, KeyH: 9, KeyU: 10, KeyJ: 11,
+                 KeyK: 12, KeyO: 13, KeyL: 14, KeyP: 15, Semicolon: 16, Quote: 17 };
+  const BOKSTAV = { 0: "A", 1: "W", 2: "S", 3: "E", 4: "D", 5: "F", 6: "T", 7: "G", 8: "Y", 9: "H", 10: "U", 11: "J", 12: "K", 13: "O", 14: "L", 15: "P", 16: "Ø", 17: "Æ" };
+  let oktav = 4;                                    // C4 = midt-C
+  const midi = steg => 12 * (oktav + 1) + steg;     // C4 = 60
+  const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+
+  /* ---------- Lyd ---------- */
+  let ctx = null, ut = null;
+  function lydPa() {
+    if (ctx) { if (ctx.state === "suspended") ctx.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ctx = new AC();
+    const komp = ctx.createDynamicsCompressor();     // hindrer skurring når mange toner klinger samtidig
+    komp.threshold.value = -18; komp.ratio.value = 4;
+    ut = ctx.createGain(); ut.gain.value = 0.55;
+    ut.connect(komp); komp.connect(ctx.destination);
+  }
+  // Hver tone er én «stemme» med egne oscillatorer, så mange toner kan klinge samtidig
+  function startTone(m) {
+    if (!ctx) return null;
+    const t = ctx.currentTime, f = hz(m), type = $("#lyd").value;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.connect(ut);
+    const osc = [];
+    const lag = (form, mult, niva, mal) => {
+      const o = ctx.createOscillator(), og = ctx.createGain();
+      o.type = form; o.frequency.value = f * mult; og.gain.value = niva;
+      o.connect(og); og.connect(mal || g); o.start(t); osc.push(o);
+    };
+    let slipp = 0.25;
+    if (type === "piano") {
+      // Sterkt anslag som dør ut av seg selv, kortere i diskanten. Overtonene dør raskere enn grunntonen.
+      const varighet = 3.2 - (m - 48) * 0.035;
+      g.gain.linearRampToValueAtTime(0.32, t + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.12, t + 0.35);
+      g.gain.exponentialRampToValueAtTime(0.0008, t + Math.max(1.2, varighet));
+      lag("triangle", 1, 0.9); lag("sine", 2.001, 0.35); lag("sine", 3.003, 0.12); lag("sine", 4.01, 0.05);
+      slipp = 0.35;
+    } else if (type === "orgel") {
+      // Som trekkstenger: flere rene toner over hverandre, jevn lyd så lenge tangenten holdes
+      g.gain.linearRampToValueAtTime(0.16, t + 0.03);
+      lag("sine", 1, 0.8); lag("sine", 2, 0.55); lag("sine", 3, 0.3); lag("sine", 4, 0.18); lag("sine", 0.5, 0.35);
+      slipp = 0.08;
+    } else {
+      // Sagtann gjennom et filter som åpner seg ved anslaget
+      const filt = ctx.createBiquadFilter(); filt.type = "lowpass"; filt.Q.value = 6;
+      filt.frequency.setValueAtTime(400, t); filt.frequency.exponentialRampToValueAtTime(3200, t + 0.12);
+      filt.frequency.exponentialRampToValueAtTime(1400, t + 0.6);
+      filt.connect(g);
+      g.gain.linearRampToValueAtTime(0.14, t + 0.02); g.gain.linearRampToValueAtTime(0.11, t + 0.3);
+      lag("sawtooth", 1, 0.6, filt); lag("sawtooth", 1.006, 0.4, filt);
+      slipp = 0.3;
+    }
+    return { g, osc, slipp };
+  }
+  function stoppTone(s) {
+    if (!s || !ctx) return;
+    const t = ctx.currentTime;
+    s.g.gain.cancelScheduledValues(t);
+    s.g.gain.setValueAtTime(Math.max(s.g.gain.value, 0.0001), t);
+    s.g.gain.exponentialRampToValueAtTime(0.0001, t + s.slipp);
+    s.osc.forEach(o => o.stop(t + s.slipp + 0.05));
+  }
+
+  /* ---------- Klaviaturet ---------- */
+  const piano = $("#piano"), tangent = {};
+  const nede = new Map();                            // steg -> { kilde-sett, stemme }
+  function tegnKlaviatur() {
+    piano.innerHTML = "";
+    const b = 100 / HVITE.length;
+    HVITE.forEach((steg, i) => lagTangent(steg, "white", i * b, b));
+    SVARTE.forEach(steg => {
+      const venstre = HVITE.indexOf(steg - 1);       // svart tangent ligger mellom den hvite under og over
+      lagTangent(steg, "black", (venstre + 1) * b - b * 0.32, b * 0.64);
+    });
+  }
+  function lagTangent(steg, farge, x, w) {
+    const k = document.createElement("div");
+    k.className = "key " + farge; k.style.left = x + "%"; k.style.width = w + "%";
+    k.dataset.steg = steg; k.setAttribute("role", "button"); k.setAttribute("aria-label", NAVN[steg % 12]);
+    k.innerHTML = `<span class="navn">${NAVN[steg % 12]}</span><span class="tast">${BOKSTAV[steg]}</span>`;
+    piano.appendChild(k); tangent[steg] = k;
+  }
+  function trykk(steg, kilde) {
+    let n = nede.get(steg);
+    if (n) { n.kilder.add(kilde); return; }
+    lydPa();
+    nede.set(steg, { kilder: new Set([kilde]), stemme: startTone(midi(steg)) });
+    tangent[steg].classList.add("down");
+    sjekkAkkord();
+  }
+  function slipp(steg, kilde) {
+    const n = nede.get(steg); if (!n) return;
+    n.kilder.delete(kilde);
+    if (n.kilder.size) return;
+    stoppTone(n.stemme); nede.delete(steg);
+    tangent[steg].classList.remove("down");
+  }
+  function slippAlle() { [...nede.keys()].forEach(s => { const n = nede.get(s); n.kilder.clear(); n.kilder.add("x"); slipp(s, "x"); }); }
+
+  // Mus og berøring: hver finger er en egen peker, så flere tangenter kan holdes samtidig, og fingeren kan gli over tangentene
+  const peker = new Map();
+  const tangentVed = (x, y) => { const el = document.elementFromPoint(x, y); const k = el && el.closest(".key"); return k ? +k.dataset.steg : null; };
+  piano.addEventListener("pointerdown", e => {
+    const s = tangentVed(e.clientX, e.clientY); if (s === null) return;
+    e.preventDefault(); piano.setPointerCapture && piano.setPointerCapture(e.pointerId);
+    peker.set(e.pointerId, s); trykk(s, "p" + e.pointerId);
+  });
+  piano.addEventListener("pointermove", e => {
+    if (!peker.has(e.pointerId)) return;
+    const s = tangentVed(e.clientX, e.clientY), før = peker.get(e.pointerId);
+    if (s === før) return;
+    slipp(før, "p" + e.pointerId);
+    if (s !== null) { peker.set(e.pointerId, s); trykk(s, "p" + e.pointerId); } else peker.set(e.pointerId, null);
+  });
+  const pekerOpp = e => { if (!peker.has(e.pointerId)) return; const s = peker.get(e.pointerId); if (s !== null) slipp(s, "p" + e.pointerId); peker.delete(e.pointerId); };
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach(t => piano.addEventListener(t, pekerOpp));
+
+  // Tastaturet
+  const iFelt = () => { const a = document.activeElement; return a && (a.tagName === "SELECT" || a.tagName === "INPUT" || a.tagName === "TEXTAREA"); };
+  document.addEventListener("keydown", e => {
+    if (e.metaKey || e.ctrlKey || e.altKey || iFelt()) return;
+    if (e.code === "KeyZ" || e.code === "KeyX") { if (!e.repeat) { e.preventDefault(); flyttOktav(e.code === "KeyZ" ? -1 : 1); } return; }
+    if (!(e.code in KODE)) return;
+    e.preventDefault();
+    if (!e.repeat) trykk(KODE[e.code], "k" + e.code);
+  });
+  document.addEventListener("keyup", e => { if (e.code in KODE) slipp(KODE[e.code], "k" + e.code); });
+  window.addEventListener("blur", slippAlle);
+  document.addEventListener("visibilitychange", () => { if (document.hidden) slippAlle(); });
+
+  function flyttOktav(d) {
+    const ny = Math.min(6, Math.max(2, oktav + d)); if (ny === oktav) return;
+    slippAlle(); oktav = ny; $("#oktavTekst").textContent = "Oktav " + oktav;
+    $("#ned").disabled = oktav === 2; $("#opp").disabled = oktav === 6;
+  }
+  $("#ned").onclick = () => flyttOktav(-1);
+  $("#opp").onclick = () => flyttOktav(1);
+  const bryter = (id, klasse) => $(id).onclick = () => {
+    const pa = piano.classList.toggle(klasse); $(id).classList.toggle("on", !pa); $(id).setAttribute("aria-pressed", String(!pa));
+  };
+  bryter("#navnBtn", "skjul-navn"); bryter("#tastBtn", "skjul-tast");
+  $("#lyd").addEventListener("change", () => $("#lyd").blur());
+  // Etter museklikk på en knapp slippes fokus, så tastaturet spiller videre
+  document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("button"); if (b && e.detail > 0) b.blur(); });
+
+  /* ---------- Akkorder ---------- */
+  // steg = tangentene i grunnstilling innenfor klaviaturet, f = fingersetting for høyre hånd
+  const AKKORD = {
+    C: { navn: "C-dur", steg: [0, 4, 7], f: [1, 3, 5], om: "Grunntonen C, den store tersen E og kvinten G. Durakkorder låter ofte lyse og stabile." },
+    F: { navn: "F-dur", steg: [5, 9, 12], f: [1, 3, 5], om: "Grunntonen F, den store tersen A og kvinten C." },
+    a: { navn: "a-moll", steg: [9, 12, 16], f: [1, 3, 5], om: "Grunntonen A, den lille tersen C og kvinten E. Mollakkorder låter ofte mørkere enn dur. Akkorder i moll skrives gjerne med liten bokstav." },
+    G: { navn: "G-dur", steg: [7, 11, 14], f: [1, 3, 5], om: "Grunntonen G, den store tersen H og kvinten D." },
+  };
+  let valgt = null, fingre = false, rekke = [], rekkeIdx = 0;
+  const klasser = s => new Set(s.map(x => x % 12));
+  Object.keys(AKKORD).forEach(k => {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = AKKORD[k].navn; b.dataset.akk = k;
+    b.onclick = () => velgAkkord(k); $("#akkValg").appendChild(b);
+  });
+  function merk() {
+    Object.values(tangent).forEach(t => { t.classList.remove("chord"); const f = t.querySelector(".finger"); if (f) f.remove(); });
+    const k = rekke.length ? rekke[rekkeIdx] : valgt; if (!k) return;
+    AKKORD[k].steg.forEach((s, i) => {
+      tangent[s].classList.add("chord");
+      if (fingre && !rekke.length) { const f = document.createElement("span"); f.className = "finger"; f.textContent = AKKORD[k].f[i]; tangent[s].appendChild(f); }
+    });
+  }
+  function velgAkkord(k) {
+    valgt = k; settRekke("");
+    document.querySelectorAll("#akkValg button").forEach(b => b.classList.toggle("on", b.dataset.akk === k));
+    const a = AKKORD[k];
+    $("#akkInfo").hidden = false;
+    $("#akkToner").textContent = a.navn + ": " + a.steg.map(s => NAVN[s % 12]).join(" – ");
+    $("#akkForklaring").textContent = a.om + " Spill de tre tonene samtidig. Du kan også bytte om på rekkefølgen, det kalles en omvending.";
+    $("#status").textContent = ""; $("#status").className = "status";
+    merk();
+  }
+  $("#fingerBtn").onclick = () => {
+    fingre = !fingre; $("#fingerBtn").classList.toggle("on", fingre); $("#fingerBtn").setAttribute("aria-pressed", String(fingre));
+    $("#fingerBtn").textContent = fingre ? "Skjul fingersetting" : "Vis fingersetting"; merk();
+    if (fingre) $("#status").textContent = "Høyre hånd: tommel (1) på grunntonen, langfinger (3) på tersen og lillefinger (5) på kvinten.";
+  };
+  // Spiller akkorden selv, uten å røre det eleven holder inne
+  function spill(steg, brutt) {
+    lydPa(); if (!ctx) return;
+    steg.forEach((s, i) => setTimeout(() => {
+      const st = startTone(midi(s)); tangent[s].classList.add("down");
+      setTimeout(() => { stoppTone(st); if (!nede.has(s)) tangent[s].classList.remove("down"); }, brutt ? 420 : 1100);
+    }, brutt ? i * 450 : 0));
+  }
+  $("#horSammen").onclick = () => valgt && spill(AKKORD[valgt].steg, false);
+  $("#horBrutt").onclick = () => valgt && spill(AKKORD[valgt].steg, true);
+
+  // Riktig når tonene som holdes, er nøyaktig akkordens tre toner (i hvilken som helst oktav og rekkefølge)
+  function sjekkAkkord() {
+    const k = rekke.length ? rekke[rekkeIdx] : valgt; if (!k) return;
+    const holdt = klasser([...nede.keys()].map(s => s + 12 * oktav)), mal = klasser(AKKORD[k].steg);
+    if (holdt.size !== mal.size || ![...mal].every(x => holdt.has(x))) return;
+    if (!rekke.length) { $("#status").textContent = "Riktig, det er " + AKKORD[k].navn + "."; $("#status").className = "status ok"; return; }
+    rekkeIdx++;
+    if (rekkeIdx >= rekke.length) { $("#status").textContent = "Hele rekka satt. Velg den igjen for å øve videre."; $("#status").className = "status ok"; rekkeIdx = rekke.length - 1; tegnRekke(true); return; }
+    $("#status").textContent = "Fint. Neste akkord er " + AKKORD[rekke[rekkeIdx]].navn + "."; $("#status").className = "status ok";
+    tegnRekke(false); merk();
+  }
+  function tegnRekke(ferdig) {
+    $("#rekke").innerHTML = rekke.map((k, i) => `<span class="${ferdig || i < rekkeIdx ? "ferdig" : i === rekkeIdx ? "naa" : ""}">${AKKORD[k].navn}</span>`).join("");
+  }
+  function settRekke(v) {
+    $("#rekkeValg").value = v; rekke = v ? v.split(" ") : []; rekkeIdx = 0;
+    if (rekke.length) {
+      valgt = null; document.querySelectorAll("#akkValg button").forEach(b => b.classList.remove("on"));
+      $("#akkInfo").hidden = true;
+      $("#status").textContent = "Spill " + AKKORD[rekke[0]].navn + "."; $("#status").className = "status";
+    }
+    tegnRekke(false); merk();
+  }
+  $("#rekkeValg").addEventListener("change", () => { settRekke($("#rekkeValg").value); $("#rekkeValg").blur(); });
+
+  tegnKlaviatur();
+  // Testkrok for riggen (ingen virkning for brukeren)
+  window.__piano = { trykk, slipp, slippAlle, velgAkkord, settRekke, nede, tangent, KODE, AKKORD, get oktav() { return oktav; }, flyttOktav };
+})();
+</script>
+</body>
+</html>

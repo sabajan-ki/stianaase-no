@@ -172,6 +172,13 @@ p { margin: 0 0 1rem; }
 .tool .shot { display: block; width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line); margin-bottom: .8rem; }
 .tool .ide { font-size: .95rem; margin-top: .6rem; padding-top: .6rem; border-top: 1px dashed var(--line); color: var(--ink); }
 .kildefelt { margin-top: 1.2rem; }
+.utdrag { margin-top: .8rem; }
+.utdrag .spill { display: inline-flex; align-items: center; gap: .45rem; font: inherit; font-weight: 600; font-size: .95rem; cursor: pointer;
+  background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: .45rem .9rem; }
+.utdrag .spill:hover, .utdrag .spill:focus-visible { border-color: var(--red); }
+.utdrag .spill svg { width: 14px; height: 14px; color: var(--red); }
+.utdrag iframe { display: block; max-width: 100%; }
+.spotify-merk { color: var(--muted); font-size: .9rem; margin: .8rem 0 0; }
 
 /* ---------- kontakt / fot ---------- */
 .contact { background: var(--night); color: var(--on-night); border-radius: var(--radius); padding: clamp(1.6rem, 5vw, 2.6rem); display: grid; gap: 1.2rem; align-items: center; grid-template-columns: 1fr; position: relative; overflow: hidden; }
