@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Piano – Stian Norgård Aase</title>
-<meta name="description" content="Et piano i nettleseren med piano-, orgel- og synthlyd, og en enkel innføring i akkordene C-dur, F-dur, a-moll og G-dur.">
+<meta name="description" content="Et piano i nettleseren med piano-, orgel- og synthlyd, og en enkel innføring i akkordene C, F, Am og G.">
 <link rel="stylesheet" href="../fonter/fonter.css">
 <style>
 /* Piano 05.10.26. Lyden lages med Web Audio i nettleseren, så siden laster ingen lydfiler og lagrer ingenting.
@@ -78,12 +78,13 @@ footer a { color: inherit; }
 <header class="top"><div class="wrap"><a href="../">Stian N. Aase</a><nav><a href="../musikk/">Musiker</a><a href="./">Lærer</a></nav></div></header>
 <main class="wrap">
   <h1>Piano</h1>
-  <p class="lead">Spill med musa, fingeren eller tastaturet. Du kan holde inne flere toner samtidig. Nederst på siden kan du lære akkordene C-dur, F-dur, a-moll og G-dur.</p>
+  <p class="lead">Spill med musa, fingeren eller tastaturet. Du kan holde inne flere toner samtidig. Nederst på siden kan du lære akkordene C, F, Am og G.</p>
 
   <div class="controls">
     <label>Lyd <select id="lyd"><option value="piano">Piano</option><option value="orgel">Orgel</option><option value="synth">Synth</option></select></label>
     <span class="oktav"><button id="ned" type="button" aria-label="En oktav ned">−</button><span id="oktavTekst">Oktav 4</span><button id="opp" type="button" aria-label="En oktav opp">+</button></span>
-    <button id="navnBtn" type="button" class="on" aria-pressed="true">Tonenavn</button>
+    <label>Tonenavn <select id="navnValg"><option value="no">Norsk: H og B</option><option value="kryss">Engelsk med ♯: B og A♯</option><option value="b">Engelsk med ♭: B og B♭</option></select></label>
+    <button id="navnBtn" type="button" class="on" aria-pressed="true">Vis tonenavn</button>
     <button id="tastBtn" type="button" class="on" aria-pressed="true">Tastaturbokstaver</button>
   </div>
 
@@ -92,7 +93,7 @@ footer a { color: inherit; }
     <li>Hvite tangenter: <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> <kbd>Ø</kbd> <kbd>Æ</kbd> gir C til F.</li>
     <li>Svarte tangenter: <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> <kbd>O</kbd> <kbd>P</kbd>.</li>
     <li><kbd>Z</kbd> og <kbd>X</kbd> flytter en oktav ned og opp.</li>
-    <li>Tonene har norske navn: H er den hvite tangenten under C, og B er den svarte under den.</li>
+    <li>Norsk og engelsk bruker ulike navn på to toner. Den hvite tangenten under C heter H på norsk og B på engelsk. Den svarte tangenten under den heter B på norsk og A♯ eller B♭ på engelsk. Besifringer og noter fra nettet bruker ofte de engelske navnene.</li>
   </ul>
 
   <section class="akkorder" aria-labelledby="akkTittel">
@@ -111,7 +112,7 @@ footer a { color: inherit; }
     <h2 style="margin-top:1rem">Øv på en akkordrekke</h2>
     <p class="forklaring">Spill akkordene i rekkefølge. Når en akkord sitter, kommer den neste.</p>
     <div class="controls">
-      <label>Rekke <select id="rekkeValg"><option value="">Velg</option><option value="C F G C">C – F – G – C</option><option value="C G a F">C – G – a – F (mye brukt i pop)</option></select></label>
+      <label>Rekke <select id="rekkeValg"><option value="">Velg</option><option value="C F G C">C – F – G – C</option><option value="C G Am F">C – G – Am – F (mye brukt i pop)</option></select></label>
       <button id="rekkeNy" type="button" hidden>Start på nytt</button>
     </div>
     <div class="rekke" id="rekke"></div>
@@ -127,7 +128,13 @@ footer a { color: inherit; }
 
   /* ---------- Tonene ---------- */
   // Halvtoner fra C: norske navn (H-systemet, B = svart tangent under H)
-  const NAVN = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "B", "H"];
+  // Tre navnesett: norsk (H-systemet), og engelsk med kryss eller b for de svarte tangentene
+  const NAVNESETT = {
+    no:    ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "B", "H"],
+    kryss: ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"],
+    b:     ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"],
+  };
+  let NAVN = NAVNESETT.no;
   // Klaviaturet går fra C til F en oktav over (17 halvtoner). Tastene følger fysisk plassering (e.code), så de virker på alle oppsett.
   const HVITE = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17];
   const SVARTE = [1, 3, 6, 8, 10, 13, 15];
@@ -214,9 +221,16 @@ footer a { color: inherit; }
   function lagTangent(steg, farge, x, w) {
     const k = document.createElement("div");
     k.className = "key " + farge; k.style.left = x + "%"; k.style.width = w + "%";
-    k.dataset.steg = steg; k.setAttribute("role", "button"); k.setAttribute("aria-label", NAVN[steg % 12] + (steg >= 12 ? " i oktaven over" : ""));
-    k.innerHTML = `<span class="navn">${NAVN[steg % 12]}</span><span class="tast">${BOKSTAV[steg]}</span>`;
+    k.dataset.steg = steg; k.setAttribute("role", "button");
+    k.innerHTML = `<span class="navn"></span><span class="tast">${BOKSTAV[steg]}</span>`;
     piano.appendChild(k); tangent[steg] = k;
+  }
+  function skrivNavn() {
+    Object.entries(tangent).forEach(([steg, k]) => {
+      k.querySelector(".navn").textContent = NAVN[steg % 12];
+      k.setAttribute("aria-label", NAVN[steg % 12] + (steg >= 12 ? " i oktaven over" : ""));
+    });
+    if (valgt) velgAkkord(valgt, true);
   }
   function trykk(steg, kilde) {
     let n = nede.get(steg);
@@ -288,22 +302,24 @@ footer a { color: inherit; }
     const pa = piano.classList.toggle(klasse); $(id).classList.toggle("on", !pa); $(id).setAttribute("aria-pressed", String(!pa));
   };
   bryter("#navnBtn", "skjul-navn"); bryter("#tastBtn", "skjul-tast");
+  $("#navnValg").addEventListener("change", () => { NAVN = NAVNESETT[$("#navnValg").value]; skrivNavn(); $("#navnValg").blur(); });
   $("#lyd").addEventListener("change", () => $("#lyd").blur());
   // Etter museklikk på en knapp slippes fokus, så tastaturet spiller videre
   document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("button"); if (b && e.detail > 0) b.blur(); });
 
   /* ---------- Akkorder ---------- */
   // steg = tangentene i grunnstilling innenfor klaviaturet, f = fingersetting for høyre hånd
+  // Navnene er besifringer (C, F, Am, G). Teksten bygges med tonenavnene i valgt navnesett.
   const AKKORD = {
-    C: { navn: "C-dur", steg: [0, 4, 7], f: [1, 3, 5], om: "Grunntonen C, den store tersen E og kvinten G. Durakkorder låter ofte lyse og stabile." },
-    F: { navn: "F-dur", steg: [5, 9, 12], f: [1, 3, 5], om: "Grunntonen F, den store tersen A og kvinten C." },
-    a: { navn: "a-moll", steg: [9, 12, 16], f: [1, 3, 5], om: "Grunntonen A, den lille tersen C og kvinten E. Mollakkorder låter ofte mørkere enn dur. Akkorder i moll skrives gjerne med liten bokstav." },
-    G: { navn: "G-dur", steg: [7, 11, 14], f: [1, 3, 5], om: "Grunntonen G, den store tersen H og kvinten D." },
+    C:  { navn: "C", lang: "C-dur", steg: [0, 4, 7], f: [1, 3, 5], om: t => `Grunntonen ${t[0]}, den store tersen ${t[1]} og kvinten ${t[2]}. Durakkorder låter ofte lyse og stabile.` },
+    F:  { navn: "F", lang: "F-dur", steg: [5, 9, 12], f: [1, 3, 5], om: t => `Grunntonen ${t[0]}, den store tersen ${t[1]} og kvinten ${t[2]}.` },
+    Am: { navn: "Am", lang: "a-moll", steg: [9, 12, 16], f: [1, 3, 5], om: t => `Grunntonen ${t[0]}, den lille tersen ${t[1]} og kvinten ${t[2]}. Mollakkorder låter ofte mørkere enn dur, og m-en i Am betyr moll.` },
+    G:  { navn: "G", lang: "G-dur", steg: [7, 11, 14], f: [1, 3, 5], om: t => `Grunntonen ${t[0]}, den store tersen ${t[1]} og kvinten ${t[2]}.` },
   };
   let valgt = null, fingre = false, rekke = [], rekkeIdx = 0;
   const klasser = s => new Set(s.map(x => x % 12));
   Object.keys(AKKORD).forEach(k => {
-    const b = document.createElement("button"); b.type = "button"; b.textContent = AKKORD[k].navn; b.dataset.akk = k;
+    const b = document.createElement("button"); b.type = "button"; b.textContent = AKKORD[k].navn; b.setAttribute("aria-label", AKKORD[k].lang); b.dataset.akk = k;
     b.onclick = () => velgAkkord(k); $("#akkValg").appendChild(b);
   });
   function merk() {
@@ -314,14 +330,15 @@ footer a { color: inherit; }
       if (fingre && !rekke.length) { const f = document.createElement("span"); f.className = "finger"; f.textContent = AKKORD[k].f[i]; tangent[s].appendChild(f); }
     });
   }
-  function velgAkkord(k) {
-    valgt = k; settRekke("");
+  function velgAkkord(k, bareTekst) {
+    valgt = k; if (!bareTekst) settRekke("");
     document.querySelectorAll("#akkValg button").forEach(b => b.classList.toggle("on", b.dataset.akk === k));
     const a = AKKORD[k];
     $("#akkInfo").hidden = false;
-    $("#akkToner").textContent = a.navn + ": " + a.steg.map(s => NAVN[s % 12]).join(" – ");
-    $("#akkForklaring").textContent = a.om + " Spill de tre tonene samtidig. Du kan også legge tonene i en annen rekkefølge. Ligger en annen tone enn grunntonen nederst, kalles det en omvending.";
-    $("#status").textContent = ""; $("#status").className = "status";
+    const t = a.steg.map(s => NAVN[s % 12]);
+    $("#akkToner").textContent = a.navn + " (" + a.lang + "): " + t.join(" – ");
+    $("#akkForklaring").textContent = a.om(t) + " Spill de tre tonene samtidig. Du kan også legge tonene i en annen rekkefølge. Ligger en annen tone enn grunntonen nederst, kalles det en omvending.";
+    if (!bareTekst) { $("#status").textContent = ""; $("#status").className = "status"; }
     merk();
   }
   $("#fingerBtn").onclick = () => {
@@ -372,7 +389,7 @@ footer a { color: inherit; }
   $("#rekkeNy").onclick = () => settRekke($("#rekkeValg").value);
   $("#rekkeValg").addEventListener("change", () => { settRekke($("#rekkeValg").value); $("#rekkeValg").blur(); });
 
-  tegnKlaviatur();
+  tegnKlaviatur(); skrivNavn();
   // Testkrok for riggen (ingen virkning for brukeren)
   window.__piano = { trykk, slipp, slippAlle, velgAkkord, settRekke, nede, tangent, KODE, AKKORD, get oktav() { return oktav; }, flyttOktav };
 })();
