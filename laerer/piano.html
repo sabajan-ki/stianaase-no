@@ -149,7 +149,7 @@ footer a { color: inherit; }
   const hz = m => 440 * Math.pow(2, (m - 69) / 12);
 
   /* ---------- Lyd ---------- */
-  let ctx = null, ut = null;
+  let ctx = null, ut = null, pianoBolge = null, stoy = null;
   function lydPa() {
     if (ctx) { if (ctx.state === "suspended") ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -161,6 +161,18 @@ footer a { color: inherit; }
     grense.threshold.value = -3; grense.ratio.value = 20; grense.attack.value = 0.002; grense.release.value = 0.1;
     ut = ctx.createGain(); ut.gain.value = 0.45;
     ut.connect(komp); komp.connect(grense); grense.connect(ctx.destination);
+    // Litt romklang, laget av støy som dør ut, så tonen ikke låter tørr (05.10.26). Ingen lydfiler.
+    const klang = ctx.createConvolver(), lengde = Math.floor(ctx.sampleRate * 1.8), ir = ctx.createBuffer(2, lengde, ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < lengde; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / lengde, 3.2); }
+    klang.buffer = ir;
+    const vat = ctx.createGain(); vat.gain.value = 0.22;
+    ut.connect(klang); klang.connect(vat); vat.connect(komp);
+    // Klangfargen til pianoet: åtte overtoner som blir svakere oppover
+    const re = new Float32Array(10), im = new Float32Array(10);
+    [0, 1, 0.62, 0.42, 0.3, 0.2, 0.13, 0.09, 0.06, 0.04].forEach((a, i) => { im[i] = a; });
+    pianoBolge = ctx.createPeriodicWave(re, im);
+    stoy = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.04), ctx.sampleRate);
+    const sd = stoy.getChannelData(0); for (let i = 0; i < sd.length; i++) sd[i] = Math.random() * 2 - 1;
   }
   // Hver tone er én «stemme» med egne oscillatorer, så mange toner kan klinge samtidig
   function startTone(m) {
@@ -175,13 +187,27 @@ footer a { color: inherit; }
     };
     let slipp = 0.25;
     if (type === "piano") {
-      // Sterkt anslag som dør ut av seg selv, kortere i diskanten. Overtonene dør raskere enn grunntonen.
-      const varighet = 3.2 - (m - 48) * 0.035;
-      g.gain.linearRampToValueAtTime(0.32, t + 0.008);
-      g.gain.exponentialRampToValueAtTime(0.12, t + 0.35);
-      g.gain.exponentialRampToValueAtTime(0.0008, t + Math.max(1.2, varighet));
-      lag("triangle", 1, 0.9); lag("sine", 2.001, 0.35); lag("sine", 3.003, 0.12); lag("sine", 4.01, 0.05);
-      slipp = 0.35;
+      // Fyldigere piano (05.10.26): to litt forstemte stemmer med åtte overtoner, et filter som lukker seg etter anslaget
+      // (klar start, rundere hale), et kort hammeranslag av filtrert støy, og to trinn i nedklingingen som i et ekte piano.
+      const varighet = Math.max(1.4, 4.2 - (m - 48) * 0.045);
+      const filt = ctx.createBiquadFilter(); filt.type = "lowpass"; filt.Q.value = 0.7;
+      const lys = Math.min(9000, f * 14), mork = Math.min(4000, f * 4);
+      filt.frequency.setValueAtTime(lys, t); filt.frequency.exponentialRampToValueAtTime(mork, t + 0.6);
+      filt.connect(g);
+      g.gain.linearRampToValueAtTime(0.42, t + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.18, t + 0.28);
+      g.gain.exponentialRampToValueAtTime(0.0006, t + varighet);
+      [-4, 4].forEach(cent => {
+        const o = ctx.createOscillator(), og = ctx.createGain();
+        o.setPeriodicWave(pianoBolge); o.frequency.value = f; o.detune.value = cent; og.gain.value = 0.5;
+        o.connect(og); og.connect(filt); o.start(t); osc.push(o);
+      });
+      lag("sine", 1, m < 60 ? 0.35 : 0.2, filt);                       // ekstra kropp i grunntonen, mest i bassen
+      const h = ctx.createBufferSource(), hf = ctx.createBiquadFilter(), hg = ctx.createGain();
+      h.buffer = stoy; hf.type = "bandpass"; hf.frequency.value = Math.min(3500, f * 6); hf.Q.value = 1.2;
+      hg.gain.setValueAtTime(0.18, t); hg.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
+      h.connect(hf); hf.connect(hg); hg.connect(g); h.start(t); osc.push(h);
+      slipp = 0.4;
     } else if (type === "orgel") {
       // Som trekkstenger: flere rene toner over hverandre, jevn lyd så lenge tangenten holdes
       g.gain.linearRampToValueAtTime(0.16, t + 0.03);
