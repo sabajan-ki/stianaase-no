@@ -197,7 +197,7 @@ footer a { color: inherit; }
       g.gain.linearRampToValueAtTime(0.42, t + 0.006);
       g.gain.exponentialRampToValueAtTime(0.18, t + 0.28);
       g.gain.exponentialRampToValueAtTime(0.0006, t + varighet);
-      [-4, 4].forEach(cent => {
+      [-2, 2].forEach(cent => {   // ±2 cent: fire ga en sur svevning (Stian 05.10.26)
         const o = ctx.createOscillator(), og = ctx.createGain();
         o.setPeriodicWave(pianoBolge); o.frequency.value = f; o.detune.value = cent; og.gain.value = 0.5;
         o.connect(og); og.connect(filt); o.start(t); osc.push(o);
