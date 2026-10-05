@@ -45,7 +45,11 @@
   h1 { font-family: var(--font-serif); font-size: 36px; margin: 0 0 4px; }
   h2 { font-family: var(--font-serif); font-size: 22px; margin: 0 0 12px; }
   h3 { font-family: var(--font-serif); font-size: 19px; margin: 24px 0 8px; }
-  .undertittel { font-size: 16px; color: var(--navy-muted); margin: 0 0 24px; }
+  .undertittel { font-size: 16px; color: var(--navy-muted); margin: 0 0 10px; }
+  .tonenavn-valg { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 15px; color: var(--navy-muted); margin: 0 0 24px; }
+  .tonenavn-valg label { font-weight: 600; color: inherit; }
+  .tonenavn-valg select { font: 400 16px var(--font-sans); color: var(--navy); background: #fff; border: 2px solid #d6dce3; border-radius: 6px; padding: 6px 10px; min-height: 40px; cursor: pointer; }
+  .tonenavn-valg select:focus { outline: none; border-color: var(--sage); }
   .utkast {
     display: inline-block; background: #fff4d6; border: 1px solid #e0c060; border-radius: 6px;
     padding: 4px 12px; font-size: 14px; margin-bottom: 16px;
@@ -186,7 +190,10 @@
 <div class="container">
 
   <h1>Gehørtrener</h1>
-  <p class="undertittel">Hør, kjenn igjen og spill på pianoet. Tonene har norske navn: H er den hvite tangenten, B er den svarte under.</p>
+  <p class="undertittel">Hør, kjenn igjen og spill på pianoet.</p>
+  <p class="tonenavn-valg"><label for="tonenavn">Tonenavn</label>
+    <select id="tonenavn"><option value="no">Norsk: H og B</option><option value="en">Engelsk: B og B♭</option></select>
+    <span id="tonenavnInfo">H er den hvite tangenten under C, og B er den svarte under den.</span></p>
 
   <div class="moduler" id="moduler">
     <button class="modul aktiv" data-modul="iv">Intervaller</button>
@@ -338,13 +345,15 @@
   // Bokstav-indeks 0–6 = C D E F G A H. fort = fortegn i halvtoner.
   // =====================================================================
   var NAT = [0, 2, 4, 5, 7, 9, 11];
-  var BOKST = ['C', 'D', 'E', 'F', 'G', 'A', 'H'];
+  // Tonenavn kan byttes mellom norsk (H og B) og engelsk (B og B♭), 05.10.26. BOKST og STANDARDNAVN byttes av settTonenavn().
+  var BOKST_NO = ['C', 'D', 'E', 'F', 'G', 'A', 'H'], BOKST_EN = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+  var BOKST = BOKST_NO, ENGELSK = false;
   var DUR = [0, 2, 4, 5, 7, 9, 11];
 
   function midiAv(n) { return 12 * (n.okt + 1) + NAT[n.b] + n.fort; }
   function pc(n) { return ((NAT[n.b] + n.fort) % 12 + 12) % 12; }
   function navn(n) {
-    if (n.b === 6) {
+    if (n.b === 6 && !ENGELSK) {
       if (n.fort === 0) return 'H';
       if (n.fort === -1) return 'B';
       if (n.fort === 1) return 'H♯';
@@ -1070,14 +1079,45 @@
     '1b': ['F-dur', 'd-moll'], '2b': ['B-dur', 'g-moll'], '3b': ['Ess-dur (E♭-dur)', 'c-moll'],
     '4b': ['Ass-dur (A♭-dur)', 'f-moll'], '5b': ['Dess-dur (D♭-dur)', 'b-moll'], '6b': ['Gess-dur (G♭-dur)', 'ess-moll (E♭-moll)']
   };
+  // Med engelske navn: H blir B og B blir B♭, og ♯/♭ skrives direkte
+  var TONEARTER_EN = {
+    '0': ['C-dur', 'a-moll'], '1s': ['G-dur', 'e-moll'], '2s': ['D-dur', 'b-moll'], '3s': ['A-dur', 'f♯-moll'],
+    '4s': ['E-dur', 'c♯-moll'], '5s': ['B-dur', 'g♯-moll'], '6s': ['F♯-dur', 'd♯-moll'],
+    '1b': ['F-dur', 'd-moll'], '2b': ['B♭-dur', 'g-moll'], '3b': ['E♭-dur', 'c-moll'],
+    '4b': ['A♭-dur', 'f-moll'], '5b': ['D♭-dur', 'b♭-moll'], '6b': ['G♭-dur', 'e♭-moll']
+  };
   $('btnSjekkToneart').onclick = function () {
     var v = $('ms-fortegn').value, ut = $('svarToneart');
     if (v === '') { ut.textContent = 'Velg fortegnene først.'; return; }
-    var t = TONEARTER[v];
+    var t = (ENGELSK ? TONEARTER_EN : TONEARTER)[v];
     ut.innerHTML = 'Med disse fortegnene er stykket i <b>' + t[0] + '</b> eller i parallelltonearten <b>' + t[1] + '</b>. ' +
       'Hør på slutten: Ender stykket i dur, er det ' + t[0] + '. Ender det i moll, er det ' + t[1] + '. ' +
       'Tips: I moll dukker ledetonen ofte opp med et ekstra fortegn, for eksempel G♯ i a-moll.';
   };
+
+  // Bytt tonenavn: navn på skjermpianoet, i tonevelgerne og i alt som lages etterpå
+  function settTonenavn(en) {
+    ENGELSK = en; BOKST = en ? BOKST_EN : BOKST_NO;
+    STANDARDNAVN[10] = en ? 'B♭' : 'B'; STANDARDNAVN[11] = en ? 'B' : 'H';
+    TONEVALG[15][0] = en ? 'B♭' : 'B'; TONEVALG[16][0] = en ? 'B' : 'H';
+    document.querySelectorAll('select').forEach(function (sel) {
+      if (!sel.id || !/^ms-iv\d-t[12]$/.test(sel.id)) return;
+      [].forEach.call(sel.options, function (o) { if (o.value !== '') o.textContent = TONEVALG[Number(o.value)][0]; });
+    });
+    [].forEach.call(document.querySelectorAll('#piano .hvit'), function (el, i) {
+      var b = i % 7; el.textContent = BOKST[b]; el.setAttribute('aria-label', 'Tangent ' + BOKST[b]);
+    });
+    [].forEach.call(document.querySelectorAll('#piano .svart'), function (el) {
+      var under = tangenter[Number(el.dataset.midi) - 1];
+      if (under) el.setAttribute('aria-label', 'Svart tangent over ' + under.textContent);
+    });
+    $('tonenavnInfo').textContent = en
+      ? 'B er den hvite tangenten under C, og B♭ er den svarte under den. Det er navnene i engelske noter og besifringer.'
+      : 'H er den hvite tangenten under C, og B er den svarte under den.';
+  }
+  $('tonenavn').addEventListener('change', function () { settTonenavn($('tonenavn').value === 'en'); });
+  // Lagringen fyller inn forrige valg etter innlasting, så valget leses også da
+  window.addEventListener('load', function () { setTimeout(function () { settTonenavn($('tonenavn').value === 'en'); }, 0); });
 
   // Start
   velgModul('iv');
