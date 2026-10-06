@@ -33,6 +33,8 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.5rem; margin: 0
 .lead { color: var(--ink-soft); max-width: 40rem; margin: 0 0 1.2rem; }
 .controls { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; margin: 0 0 1rem; }
 .controls label { display: inline-flex; align-items: center; gap: .4rem; font-weight: 600; font-size: .95rem; }
+select { max-width: 100%; min-width: 0; text-overflow: ellipsis; }
+.controls label { max-width: 100%; min-width: 0; }
 select, button { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: .4rem .9rem; cursor: pointer; }
 button:hover, select:hover, button:focus-visible, select:focus-visible { border-color: var(--red); outline: none; }
 button:focus-visible, select:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 35%, transparent); }
@@ -60,7 +62,7 @@ section.playback { background: var(--card); border: 1px solid var(--line); borde
 .pbTolket .feil { color: var(--red); font-weight: 700; }
 .pbNaa { font-family: var(--display); font-size: 1.6rem; font-weight: 600; min-height: 1.4em; margin: .4rem 0 0; }
 .pbRekke { display: flex; flex-wrap: wrap; gap: .35rem; margin: .5rem 0 0; }
-.pbRekke span { border: 1px solid var(--line); border-radius: 8px; padding: .15rem .55rem; font-weight: 700; font-size: .95rem; }
+.pbRekke span { border-radius: 4px; padding: .05rem .35rem; font-weight: 600; font-size: .95rem; color: var(--ink-soft); }
 .pbRekke span.naa { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .liten { color: var(--muted); font-size: .9rem; margin: .3rem 0 0; }
 details.flere { margin: 1rem 0 0; border-top: 1px solid var(--line); padding-top: .7rem; }
@@ -74,7 +76,10 @@ details.flere[open] summary { margin-bottom: .8rem; }
 .skjul-navn .key .navn, .skjul-tast .key .tast { visibility: hidden; }
 .hjelp { color: var(--muted); font-size: .92rem; margin: 0 0 1.6rem; padding-left: 1.1rem; }
 .hjelp li { margin: .15rem 0; }
-@media (hover: none) { .hjelp li:nth-child(-n+3) { display: none; } }
+@media (hover: none) { .hjelp { display: none; } }
+details.hb { color: var(--muted); font-size: .92rem; margin: -1rem 0 1.4rem; }
+details.hb summary { cursor: pointer; }
+@media (hover: none) { details.hb { margin-top: 0; } }
 kbd { font: inherit; font-weight: 600; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0 .3em; background: var(--card); }
 
 section.akkorder { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1.1rem 1.2rem 1.2rem; margin: 0 0 2rem; }
@@ -113,23 +118,23 @@ footer a { color: inherit; }
     <li>Hvite tangenter: <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> <kbd>Ø</kbd> <kbd>Æ</kbd> gir C til F.</li>
     <li>Svarte tangenter: <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> <kbd>O</kbd> <kbd>P</kbd>.</li>
     <li><kbd>Z</kbd> og <kbd>X</kbd> flytter en oktav ned og opp.</li>
-    <li>Norsk og engelsk bruker ulike navn på to toner. Den hvite tangenten under C heter H på norsk og B på engelsk. Den svarte tangenten under den heter B på norsk og A♯ eller B♭ på engelsk. Besifringer og noter fra nettet bruker ofte de engelske navnene.</li>
   </ul>
+  <details class="hb"><summary>Hvorfor H og B?</summary>Norsk og engelsk bruker ulike navn på to toner. Den hvite tangenten under C heter H på norsk og B på engelsk. Den svarte tangenten under den heter B på norsk og A♯ eller B♭ på engelsk. Besifringer og noter fra nettet bruker ofte de engelske navnene.</details>
 
   <section class="playback" aria-labelledby="pbTittel">
     <h2 id="pbTittel">Spill med akkompagnement</h2>
     <p class="forklaring">Lim inn akkordene til en sang, så spiller pianoet dem som akkompagnement mens eleven øver. Tangentene for akkorden som klinger, lyser opp.</p>
-    <div class="controls"><label>Ferdig rekke <select id="pbFerdig"><option value="">Velg, eller skriv dine egne under</option></select></label></div>
-    <p class="liten" id="pbOm" style="margin:-.4rem 0 .8rem"></p>
-    <label for="pbTekst" class="forklaring" style="display:block;font-weight:600;margin-bottom:.3rem">Akkorder</label>
-    <textarea id="pbTekst" rows="3" spellcheck="false">| C | G | Am | F |</textarea>
-    <p class="liten">Hver akkord er én takt. Står flere akkorder mellom to streker, deler de takten, som <b>| C G | Am F |</b>. <b>%</b> gjentar forrige takt, og <b>N.C.</b> er en takt uten akkord. Lim inn bare akkordene, for sangteksten har opphavsrett.</p>
-    <p class="pbTolket" id="pbTolket" aria-live="polite"></p>
     <div class="controls">
       <button id="pbSpill" type="button" class="on">▶ Spill</button>
+      <label>Ferdig rekke <select id="pbFerdig"><option value="">Velg, eller skriv dine egne under</option></select></label>
     </div>
+    <p class="liten" id="pbOm" style="margin:-.4rem 0 .4rem"></p>
     <p class="pbNaa" id="pbNaa" aria-live="polite"></p>
     <div class="pbRekke" id="pbRekke"></div>
+    <label for="pbTekst" class="forklaring" style="display:block;font-weight:600;margin:1rem 0 .3rem">Akkorder</label>
+    <textarea id="pbTekst" rows="3" spellcheck="false">| C | G | Am | F |</textarea>
+    <p class="pbTolket" id="pbTolket" aria-live="polite"></p>
+    <p class="liten">Hver akkord er én takt. Står flere akkorder mellom to streker, deler de takten, som <b>| C G | Am F |</b>. <b>%</b> gjentar forrige takt, og <b>N.C.</b> er en takt uten akkord. Lim inn bare akkordene, for sangteksten har opphavsrett.</p>
     <details class="flere" id="pbFlere">
     <summary id="pbFlereTekst">Flere valg</summary>
     <div class="controls">
@@ -352,7 +357,7 @@ footer a { color: inherit; }
 
   // Tastaturet
   // Menyene tar ikke imot pianotastene: ellers bytter hurtigsøket i Lyd-menyen lyd i stillhet (S = Synth). Piltastene virker fortsatt i menyen.
-  const iFelt = () => { const a = document.activeElement; return a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA"); };
+  const iFelt = () => { const a = document.activeElement; return a && (a.tagName === "TEXTAREA" || (a.tagName === "INPUT" && /^(text|search|number|email|url)$/.test(a.type))); };   // glidebryter og avkrysning stjeler ikke tangentene
   document.addEventListener("keydown", e => {
     if (e.key === "Meta" || e.metaKey) { slippTastatur(); return; }
     if (e.ctrlKey || e.altKey || iFelt()) return;
@@ -496,12 +501,19 @@ footer a { color: inherit; }
     const rot = tone(m[1], m[2] || ""); if (rot === null) return null;
     let rest = m[3];
     if (m[1] === m[1].toLowerCase() && rest === "") rest = "m";        // liten bokstav = moll, som i norsk tradisjon (a = Am)
-    const k = KVAL.find(([kode]) => rest === kode); if (!k) return null;
+    let k = KVAL.find(([kode]) => rest === kode), forenklet = false;
+    if (!k && /^[\dmajinsudgob°ø+#♯♭()\-Δ]+$/.test(rest)) {
+      // Utvidede akkorder (G13, C7#9, Fmaj7#11, Cadd11) spilles forenklet: 11 og 13 som 7, ellers den lengste kjente begynnelsen
+      const kort = rest.replace(/^(m|maj|M)?(11|13)/, (_, q) => (q || "") + "7");
+      k = KVAL.filter(([kode]) => kort.startsWith(kode)).sort((x, y) => y[0].length - x[0].length)[0];
+      forenklet = !!k;
+    }
+    if (!k) return null;
     const bass = m[4] ? tone(m[4], m[5] || "") : rot; if (bass === null) return null;
-    return { navn, rot, kval: k[1], pcs: k[2].map(x => (rot + x) % 12), bass };
+    return { navn, rot, kval: k[1], pcs: k[2].map(x => (rot + x) % 12), bass, forenklet, skrevet: rest };
   }
   function tolkTekst(tekst) {
-    const takter = [], feil = [];
+    const takter = [], feil = [], forenklet = [];
     const ren = tekst.replace(/\|:|:\|/g, "|");                           // repetisjonstegn regnes som vanlige streker
     const rader = ren.includes("|") ? ren.split("|") : ren.split(/[\s,]+/);
     rader.map(r => r.trim()).filter(Boolean).forEach(r => {
@@ -509,11 +521,11 @@ footer a { color: inherit; }
       const ak = [];
       r.split(/[\s,]+/).filter(Boolean).forEach(n => {
         if (n === "%") { const f = ak[ak.length - 1] || (takter.length && takter[takter.length - 1].slice(-1)[0]); if (f) ak.push(f); return; }
-        const a = tolkAkkord(n); if (a) ak.push(a); else feil.push(n);
+        const a = tolkAkkord(n); if (a) { ak.push(a); if (a.forenklet) forenklet.push(a); } else feil.push(n);
       });
-      if (ak.length) takter.push(ak);
+      takter.push(ak.length ? ak : [{ navn: "N.C.", pause: true }]);                 // ukjent takt blir en pause, så rekka beholder lengden
     });
-    return { takter, feil };
+    return { takter, feil, forenklet };
   }
   // Velg plassering på klaviaturet (steg 0–17) nær forrige akkord, så hånden flytter seg minst mulig
   function plasser(pcs, forrige) {
@@ -561,20 +573,21 @@ footer a { color: inherit; }
                kryss >= 5 ? "A#" : (no ? "B" : "Bb"), no ? "H" : "B"];
     return k[pc];
   }
-  function akkordNavn(a, K, n = 0) {
+  function akkordNavn(a, K, n = 0, ordrett = false) {
     if (a.pause) return "N.C.";
-    const rot = navnPa(a.rot + n, K) + a.kval;
+    const rot = navnPa(a.rot + n, K) + (ordrett && a.forenklet ? a.skrevet : a.kval);
     return a.bass !== a.rot ? rot + "/" + navnPa(a.bass + n, K) : rot;
   }
 
-  const PB = { spiller: false, ferdig: false, idx: 0, tid: 0, timer: null, vis: [], holdt: [], forrige: null, bass: null, takter: [] };
+  const PB = { egenTekst: false, spiller: false, ferdig: false, idx: 0, tid: 0, timer: null, vis: [], holdt: [], forrige: null, bass: null, takter: [] };
   const esc = x => String(x).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   function pbVis() {
-    const tekst = $("#pbTekst").value, { takter, feil } = tolkTekst(tekst), ta = finnToneart(takter);
+    const tekst = $("#pbTekst").value, { takter, feil, forenklet } = tolkTekst(tekst), ta = finnToneart(takter);
     const navn = takter.map(t => t.map(a => akkordNavn(a, ta ? ta.K : 0)).join(" "));
-    const bNorsk = $("#navnValg").value === "no" && /(^|[\s|/,])B(?![b♭])/.test(tekst);
+    const bNorsk = PB.egenTekst && $("#navnValg").value === "no" && /(^|[\s|/,])B(?![b♭])/.test(tekst);   // bare for tekst eleven har skrevet eller limt inn
     $("#pbTolket").innerHTML = (takter.length ? "Pianoet leser " + takter.length + (takter.length === 1 ? " takt: " : " takter: ") + navn.map(esc).join(" | ") : "Ingen akkorder ennå.")
-      + (feil.length ? ` <span class="feil">Kjenner ikke igjen: ${feil.map(esc).join(", ")}</span>` : "")
+      + (feil.length ? ` <span class="feil">Kjenner ikke igjen: ${feil.map(esc).join(", ")}. Takter uten kjent akkord spilles som pause.</span>` : "")
+      + (forenklet.length ? " · Spilles enklere: " + [...new Set(forenklet.map(a => a.navn + " som " + akkordNavn(a, ta ? ta.K : 0)))].map(esc).join(", ") + "." : "")
       + (bNorsk ? " · B betyr B♭ med norske tonenavn. Er akkordene hentet fra en engelsk besifring, velg engelske tonenavn øverst." : "");
     $("#pbRekke").innerHTML = navn.map((n, i) => `<span data-i="${i}">${esc(n)}</span>`).join("");
     return takter;
@@ -593,7 +606,8 @@ footer a { color: inherit; }
     o.connect(g); g.connect(ut); o.start(t); o.stop(t + 0.06);
     husk({ g, osc: [o], slipp: 0 });
   }
-  function spillNote(m, t, lengde, styrke) {
+  function spillTone(m, t, lengde, styrke) {
+    if (window.__pianoLogg) window.__pianoLogg.push([m, t, lengde]);          // bare for testriggen
     const st = startTone(m, t); if (!st) return;
     if (styrke && st.slipp === null) st.g.gain.setValueAtTime(styrke, t);       // styrke bare for pianolyden; orgel og synth har egne kurver
     if (st.slipp !== null) stoppTone(st, t + lengde);
@@ -611,13 +625,13 @@ footer a { color: inherit; }
     umpa: "Bass og akkord på skift: bass på 1 og akkord på 2 og 3 i vals, eller bass–akkord–bass–akkord i 4/4. Bassen veksler mellom grunntone og kvint.",
     reggae: "Grunntonen på 1 og korte akkorder på 2 og 4, motslaget som er typisk for reggae.",
     swing: "Gående bass i fjerdedeler som leder mot neste akkord, og korte akkorder i charleston-rytme (på 1 og like før 3).",
-    blues: "Shuffle i venstre hånd: grunntone med kvint og grunntone med sekst på skift, i svingte åttendedeler. Høyre hånd tar korte akkorder på 2 og 4.",
+    blues: "Shuffle i venstre hånd: grunntone med kvint og grunntone med sekst på skift, i svingte åttendedeler. Høyre hånd tar korte akkorder på 2 og 4, i 3/4 bare på 2.",
   };
   // Bassen ligger mellom C2 og G3. naer() finner grunntonen i det leiet som ligger nærmest en referansetone.
   const BASS_LAV = 36, BASS_HOY = 55;
-  function naer(pc, ref) {
+  function naer(pc, ref, hoy = BASS_HOY) {
     let best = null;
-    for (let m = BASS_LAV; m <= BASS_HOY; m++) if ((m - pc) % 12 === 0 && (best === null || Math.abs(m - ref) < Math.abs(best - ref))) best = m;
+    for (let m = BASS_LAV; m <= hoy; m++) if ((m - pc) % 12 === 0 && (best === null || Math.abs(m - ref) < Math.abs(best - ref))) best = m;
     return best;
   }
   // Lager hendelsene for én takt. Akkordene i takten deler slagene likt, og alle mønstre holder seg innenfor sin egen del.
@@ -630,7 +644,11 @@ footer a { color: inherit; }
       const neste = k + 1 < takt.length && !takt[k + 1].pause ? takt[k + 1].rot : nesteRot;
       const vis = akkordNavn(a, PB.toneart ? PB.toneart.K : 0);
       PB.vis.push(setTimeout(() => pbMerk(v, vis, nr), Math.max(0, (t0 - ctx.currentTime) * 1000)));
-      const R = naer(a.bass, PB.bass === null ? 45 : PB.bass); PB.bass = R;
+      const R = naer(a.bass, PB.bass === null ? 45 : PB.bass, stil === "swing" ? BASS_HOY - 7 : BASS_HOY); PB.bass = R;   // gående bass trenger plass til kvinten over
+      const spillNote = (m, ti, lengde, styrke) => {                          // ingen tone varer lenger enn akkorden den hører til
+        const rest = t0 + varer - ti; if (rest <= eps) return;
+        spillTone(m, ti, Math.min(lengde, rest - 0.02), styrke);
+      };
       const akk = (tid, lengde, styrke) => v.forEach(s => spillNote(midi(s), tid, lengde, styrke));
       const hvert = (steg, f) => { for (let i = 0; i * steg < varer - eps; i++) f(i, t0 + i * steg); };   // slag eller åttendedeler innenfor akkorden
       const nSlag = Math.max(1, Math.floor(per + eps));
@@ -654,19 +672,31 @@ footer a { color: inherit; }
         spillNote(R, t0, Math.min(varer, 1.5 * sl) - 0.03);
         hvert(sl, (i, ti) => { if (i % 2 === 1) akk(ti, 0.14, 0.75); });
       } else if (stil === "swing") {
-        // Gående bass: grunntone, ters og kvint, og til slutt en halvtone under (eller over) neste grunntone i samme leie
+        // Gående bass: grunntone, ters og kvint (opp, eller kvint og ters under ned), og til slutt en halvtone under eller over
+        // neste grunntone. Av alle veier i leiet velges den med minst sprang, så bassen verken klatrer eller faller ut av leiet.
         const ters = a.pcs[1] !== undefined ? (a.pcs[1] - a.rot + 12) % 12 : 4;
-        const N = naer(neste, R + 7), mot = N - 1 !== R + 7 ? N - 1 : N + 1;
-        const gang = nSlag >= 4 ? [R, R + ters, R + 7, mot] : nSlag === 3 ? [R, R + 7, mot] : nSlag === 2 ? [R, mot] : [R];
-        hvert(sl, (i, ti) => spillNote(gang[Math.min(i, gang.length - 1)], ti, sl - 0.06, 0.9));
-        PB.bass = mot;
+        let gang = [R], best = Infinity;
+        if (nSlag >= 2) for (let N = BASS_LAV; N <= BASS_HOY - 7; N++) {
+          if ((N - neste + 120) % 12) continue;
+          for (const ned of [false, true]) {
+            const midt = ned ? [R - 5, R - 12 + ters] : [R + ters, R + 7];
+            const kropp = nSlag >= 4 ? [R, ...midt] : nSlag === 3 ? [R, ned ? midt[0] : midt[1]] : [R], sist = kropp[kropp.length - 1];
+            const mot = N - 1 !== sist && Math.abs(N - 1 - sist) <= Math.abs(N + 1 - sist) ? N - 1 : N + 1, vei = [...kropp, mot];
+            if (vei.some(m => m < BASS_LAV || m > BASS_HOY)) continue;
+            const kost = vei.reduce((k, m, i) => k + (i ? Math.abs(m - vei[i - 1]) : 0), 0) + 0.5 * Math.abs(N - R);
+            if (kost < best) { best = kost; gang = vei; }
+          }
+        }
+        hvert(sl, (i, ti) => spillNote(gang[Math.min(i, gang.length - 1)], ti, sl - 0.04, 0.9));
+        PB.bass = gang[gang.length - 1];
         akk(t0, sl * 0.55, 0.7);
         if (varer > sl * (1 + 2 / 3) + eps) akk(t0 + sl * (1 + 2 / 3), sl * 0.3, 0.6);   // charleston: 1 og «og» etter 2, svingt
       } else if (stil === "blues") {
         // Shuffle: hvert slag deles svingt (2/3 + 1/3). Grunntone med kvint på slag 1 og 3, grunntone med sekst på 2 og 4.
+        const G = a.bass === a.rot ? R : naer(a.rot, R);                     // over en skråstrekakkord bygges shufflen på grunntonen
         hvert(sl, (i, ti) => {
-          const topp = R + (i % 2 ? 9 : 7);
-          [0, 2 / 3].forEach((del, d) => { spillNote(R, ti + del * sl, (d ? 1 / 3 : 2 / 3) * sl - 0.04, d ? 0.7 : 0.95); spillNote(topp, ti + del * sl, (d ? 1 / 3 : 2 / 3) * sl - 0.04, d ? 0.6 : 0.8); });
+          const topp = G + (i % 2 ? 9 : 7);
+          [0, 2 / 3].forEach((del, d) => { spillNote(G, ti + del * sl, (d ? 1 / 3 : 2 / 3) * sl - 0.04, d ? 0.7 : 0.95); spillNote(topp, ti + del * sl, (d ? 1 / 3 : 2 / 3) * sl - 0.04, d ? 0.6 : 0.8); });
           if (i % 2 === 1) akk(ti, sl * 0.35, 0.65);                           // korte akkorder på 2 og 4
         });
       }
@@ -714,6 +744,7 @@ footer a { color: inherit; }
       PB.holdt.forEach(st => {
         try { st.g.gain.cancelScheduledValues(naa); st.g.gain.setTargetAtTime(0, naa, 0.02); } catch (_) {}
         st.osc.forEach(o => { try { o.stop(naa + 0.15); } catch (_) {} });
+        setTimeout(() => { try { st.g.disconnect(); } catch (_) {} }, 160);      // også toner som skulle starte senere, blir stille
       });
     }
     PB.holdt = [];
@@ -722,6 +753,7 @@ footer a { color: inherit; }
   }
   $("#pbSpill").onclick = () => PB.spiller ? pbStopp() : pbStart();
   $("#pbTekst").addEventListener("input", () => {
+    PB.egenTekst = true;
     const takter = pbVis();
     $("#pbFerdig").value = ""; $("#pbOm").textContent = "";                    // en egen rekke er ikke lenger den ferdige
     if (PB.spiller && takter.length) { PB.takter = takter; PB.toneart = finnToneart(takter); if (PB.idx > takter.length) PB.idx = 0; }
@@ -763,6 +795,7 @@ footer a { color: inherit; }
       const f = FERDIG[sel.value]; sel.blur();
       if (!f) { $("#pbOm").textContent = ""; return; }
       if (PB.spiller) pbStopp();
+      PB.egenTekst = false;
       $("#pbTekst").value = f.akk; $("#pbTakt").value = String(f.takt);
       $("#pbTempo").value = String(f.tempo); $("#pbTempoTekst").textContent = f.tempo;
       if (f.stil) { $("#pbMate").value = f.stil; visMate(); }
@@ -781,7 +814,7 @@ footer a { color: inherit; }
     if (!ta) return;
     const nyK = (ta.K + n + 120) % 12;
     let k = 0;
-    felt.value = felt.value.replace(/[^\s|,%:]+/g, tok => { const a = tolket[k++]; return a ? akkordNavn(a, nyK, n) : tok; });
+    felt.value = felt.value.replace(/[^\s|,%:]+/g, tok => { const a = tolket[k++]; return a ? akkordNavn(a, nyK, n, true) : tok; });
     pbVis(); visToneart();
     if (PB.spiller) { PB.takter = tolkTekst(felt.value).takter; PB.toneart = finnToneart(PB.takter); }   // avspillingen går over fra neste takt
   }
@@ -817,7 +850,7 @@ footer a { color: inherit; }
 
   tegnKlaviatur(); skrivNavn();
   // Testkrok for riggen (ingen virkning for brukeren)
-  window.__piano = { trykk, slipp, slippAlle, velgAkkord, settRekke, nede, tangent, KODE, AKKORD, get oktav() { return oktav; }, flyttOktav, tolkAkkord, tolkTekst, plasser, pbStart, pbStopp, PB, FERDIG, transponer, finnToneart, akkordNavn, get lydtid() { return ctx ? ctx.currentTime : null; } };
+  window.__piano = { trykk, slipp, slippAlle, velgAkkord, settRekke, nede, tangent, KODE, AKKORD, get oktav() { return oktav; }, flyttOktav, tolkAkkord, tolkTekst, plasser, pbStart, pbStopp, planleggTakt, PB, FERDIG, transponer, finnToneart, akkordNavn, get lydtid() { return ctx ? ctx.currentTime : null; } };
 })();
 </script>
 </body>
