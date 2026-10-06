@@ -62,8 +62,9 @@ section.playback { background: var(--card); border: 1px solid var(--line); borde
 .pbTolket .feil { color: var(--red); font-weight: 700; }
 .pbNaa { font-family: var(--display); font-size: 1.6rem; font-weight: 600; min-height: 1.4em; margin: .4rem 0 0; }
 .pbRekke { display: flex; flex-wrap: wrap; gap: .35rem; margin: .5rem 0 0; }
-.pbRekke span { border-radius: 4px; padding: .05rem .35rem; font-weight: 600; font-size: .95rem; color: var(--ink-soft); }
-.pbRekke span.naa { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.pbRekke button { border-radius: 6px; padding: .1rem .5rem; font-weight: 600; font-size: .95rem; color: var(--ink-soft); background: transparent; border-color: transparent; }
+.pbRekke button:hover { border-color: var(--line); }
+.pbRekke button.naa { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .liten { color: var(--muted); font-size: .9rem; margin: .3rem 0 0; }
 details.flere { margin: 1rem 0 0; border-top: 1px solid var(--line); padding-top: .7rem; }
 details.flere summary { cursor: pointer; font-weight: 600; margin-bottom: .6rem; }
@@ -134,7 +135,7 @@ footer a { color: inherit; }
     <label for="pbTekst" class="forklaring" style="display:block;font-weight:600;margin:1rem 0 .3rem">Akkorder</label>
     <textarea id="pbTekst" rows="3" spellcheck="false">| C | G | Am | F |</textarea>
     <p class="pbTolket" id="pbTolket" aria-live="polite"></p>
-    <p class="liten">Hver akkord er én takt. Står flere akkorder mellom to streker, deler de takten, som <b>| C G | Am F |</b>. <b>%</b> gjentar forrige takt, og <b>N.C.</b> er en takt uten akkord. Lim inn bare akkordene, for sangteksten har opphavsrett.</p>
+    <p class="liten">Hver akkord er én takt. Står flere akkorder mellom to streker, deler de takten, som <b>| C G | Am F |</b>. <b>%</b> gjentar forrige takt, og <b>N.C.</b> er en takt uten akkord. Klikk på en takt over feltet for å spille fra den. Lim inn bare akkordene, for sangteksten har opphavsrett.</p>
     <details class="flere" id="pbFlere">
     <summary id="pbFlereTekst">Flere valg</summary>
     <div class="controls">
@@ -589,14 +590,14 @@ footer a { color: inherit; }
       + (feil.length ? ` <span class="feil">Kjenner ikke igjen: ${feil.map(esc).join(", ")}. Takter uten kjent akkord spilles som pause.</span>` : "")
       + (forenklet.length ? " · Spilles enklere: " + [...new Set(forenklet.map(a => a.navn + " som " + akkordNavn(a, ta ? ta.K : 0)))].map(esc).join(", ") + "." : "")
       + (bNorsk ? " · B betyr B♭ med norske tonenavn. Er akkordene hentet fra en engelsk besifring, velg engelske tonenavn øverst." : "");
-    $("#pbRekke").innerHTML = navn.map((n, i) => `<span data-i="${i}">${esc(n)}</span>`).join("");
+    $("#pbRekke").innerHTML = navn.map((n, i) => `<button type="button" data-i="${i}" aria-label="Spill fra takt ${i + 1}: ${esc(n)}">${esc(n)}</button>`).join("");
     return takter;
   }
   function pbMerk(v, navn, takt) {
     Object.values(tangent).forEach(t => t.classList.remove("pb"));
     if (v) v.forEach(s => tangent[s] && tangent[s].classList.add("pb"));
     $("#pbNaa").textContent = navn || "";
-    document.querySelectorAll("#pbRekke span").forEach(sp => sp.classList.toggle("naa", +sp.dataset.i === takt));
+    document.querySelectorAll("#pbRekke button").forEach(sp => sp.classList.toggle("naa", +sp.dataset.i === takt));
   }
   function husk(st) { if (st) { PB.holdt.push(st); if (PB.holdt.length > 600) PB.holdt.splice(0, 300); } }
   function klikk(t, sterk) {
@@ -622,7 +623,7 @@ footer a { color: inherit; }
     enkel: "Akkorden slås an på første slag, og i 4/4 også på tredje. Godt for å finne akkordene i ro.",
     pop: "Jevne åttendedeler med akkorden, og grunntonen i bassen på 1 og 3. Driver låten framover.",
     ballade: "Bass og brutte akkorder i åttendedeler, og tonene klinger til akkorden skifter, som med pedal. Passer til rolige sanger.",
-    umpa: "Bass og akkord på skift: bass på 1 og akkord på 2 og 3 i vals, eller bass–akkord–bass–akkord i 4/4. Bassen veksler mellom grunntone og kvint.",
+    umpa: "Bass og akkord på skift: bass på 1 og lette akkorder på 2 og 3 i vals (tung–lett–lett), eller bass–akkord–bass–akkord i 4/4. Bassen veksler mellom grunntone og kvint.",
     reggae: "Grunntonen på 1 og korte akkorder på 2 og 4, motslaget som er typisk for reggae.",
     swing: "Gående bass i fjerdedeler som leder mot neste akkord, og korte akkorder i charleston-rytme (på 1 og like før 3).",
     blues: "Shuffle i venstre hånd: grunntone med kvint og grunntone med sekst på skift, i svingte åttendedeler. Høyre hånd tar korte akkorder på 2 og 4, i 3/4 bare på 2.",
@@ -636,9 +637,12 @@ footer a { color: inherit; }
   }
   // Lager hendelsene for én takt. Akkordene i takten deler slagene likt, og alle mønstre holder seg innenfor sin egen del.
   function planleggTakt(takt, nr, t, sl, nesteRot) {
-    const slag = +$("#pbTakt").value, stil = $("#pbMate").value, per = slag / takt.length, eps = 1e-3;
+    const slag = +$("#pbTakt").value, stil = $("#pbMate").value, eps = 1e-3;
+    // To akkorder i 3/4 deles 2 + 1 slag (vals: tung–lett–lett). Ellers deler akkordene slagene likt.
+    const deler = slag === 3 && takt.length === 2 ? [2, 1] : takt.map(() => slag / takt.length);
     takt.forEach((a, k) => {
-      const t0 = t + k * per * sl, varer = per * sl;
+      const per = deler[k], forst = deler.slice(0, k).reduce((x, y) => x + y, 0);   // slag akkorden varer, og slaget den starter på
+      const t0 = t + forst * sl, varer = per * sl;
       if (a.pause) { PB.vis.push(setTimeout(() => pbMerk(null, "N.C.", nr), Math.max(0, (t0 - ctx.currentTime) * 1000))); return; }
       const v = plasser(a.pcs, PB.forrige); PB.forrige = v;
       const neste = k + 1 < takt.length && !takt[k + 1].pause ? takt[k + 1].rot : nesteRot;
@@ -664,9 +668,10 @@ footer a { color: inherit; }
       } else if (stil === "umpa") {
         const kvint = R - 5 >= BASS_LAV ? R - 5 : R + 7;
         hvert(sl, (i, ti) => {
-          if (slag === 3) { if (i === 0) spillNote(nr % 2 && a.bass === a.rot ? kvint : R, ti, sl - 0.05); else akk(ti, sl * 0.5, 0.7); }
-          else if (i % 2 === 0) spillNote((i / 2) % 2 && a.bass === a.rot ? kvint : R, ti, sl - 0.05);
-          else akk(ti, sl * 0.5, 0.7);
+          const s = forst + i;                                                 // slaget i takten
+          if (slag === 3) { if (s === 0) spillNote(nr % 2 && a.bass === a.rot ? kvint : R, ti, sl - 0.05, 1); else akk(ti, sl * 0.5, 0.55); }   // tung–lett–lett
+          else if (s % 2 === 0) spillNote((s / 2) % 2 && a.bass === a.rot ? kvint : R, ti, sl - 0.05, 1);
+          else akk(ti, sl * 0.5, 0.6);
         });
       } else if (stil === "reggae") {
         spillNote(R, t0, Math.min(varer, 1.5 * sl) - 0.03);
@@ -721,13 +726,14 @@ footer a { color: inherit; }
       PB.tid += slag * sl; PB.idx++;
     }
   }
-  function pbStart() {
+  function pbStart(fra = 0) {
     const takter = pbVis(); if (!takter.length) { $("#pbNaa").textContent = "Lim inn noen akkorder først."; return; }
     lydPa(); if (!ctx) return;
+    const iGang = PB.spiller;
     pbStopp();
-    Object.assign(PB, { spiller: true, ferdig: false, takter, idx: 0, forrige: null, bass: null, toneart: finnToneart(takter), tid: ctx.currentTime + 0.1 });
+    Object.assign(PB, { spiller: true, ferdig: false, takter, idx: Math.min(fra, takter.length - 1), forrige: null, bass: null, toneart: finnToneart(takter), tid: ctx.currentTime + 0.1 });
     const sl = 60 / +$("#pbTempo").value, slag = +$("#pbTakt").value;
-    if ($("#pbTell").checked) {
+    if ($("#pbTell").checked && !iGang) {                                       // hopper man til en takt mens det spiller, telles det ikke inn
       for (let i = 0; i < slag; i++) klikk(PB.tid + i * sl, i === 0);
       $("#pbNaa").textContent = "Tell inn …";
       PB.tid += slag * sl;
@@ -752,6 +758,7 @@ footer a { color: inherit; }
     $("#pbSpill").textContent = "▶ Spill"; $("#pbSpill").classList.add("on");
   }
   $("#pbSpill").onclick = () => PB.spiller ? pbStopp() : pbStart();
+  $("#pbRekke").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { pbStart(+b.dataset.i); b.blur(); } });
   $("#pbTekst").addEventListener("input", () => {
     PB.egenTekst = true;
     const takter = pbVis();
