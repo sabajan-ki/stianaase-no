@@ -139,6 +139,8 @@ footer a { color: inherit; }
   <section class="playback" aria-labelledby="pbTittel">
     <h2 id="pbTittel">Spill med akkompagnement</h2>
     <p class="forklaring">Lim inn akkordene til en sang, så spiller pianoet dem som akkompagnement mens eleven øver. Tangentene for akkorden som klinger, lyser opp.</p>
+    <div class="controls"><label>Ferdig rekke <select id="pbFerdig"><option value="">Velg, eller skriv dine egne under</option></select></label></div>
+    <p class="liten" id="pbOm" style="margin:-.4rem 0 .8rem"></p>
     <label for="pbTekst" class="forklaring" style="display:block;font-weight:600;margin-bottom:.3rem">Akkorder</label>
     <textarea id="pbTekst" rows="3" spellcheck="false">| C | G | Am | F |</textarea>
     <p class="liten">Hver akkord er én takt. Står flere akkorder mellom to streker, deler de takten, som <b>| C G | Am F |</b>. <b>%</b> gjentar forrige takt. Lim inn bare akkordene, for sangteksten har opphavsrett.</p>
@@ -589,11 +591,42 @@ footer a { color: inherit; }
   $("#navnValg").addEventListener("change", pbVis);
   ["#pbTakt", "#pbMate"].forEach(id => $(id).addEventListener("change", () => $(id).blur()));
   document.addEventListener("visibilitychange", () => { if (document.hidden && PB.spiller) pbStopp(); });
+  // Ferdige rekker (06.10.26). Grunnrekkene er vanlige trinnfølger fra harmonilæren. Pachelbels kanon og Amazing Grace er fri musikk,
+  // og akkordene er sjekket mot to uavhengige kilder hver (traditionalsongs.org og goodguitarist.com for Amazing Grace;
+  // Wikipedia og guitarcomposerstoolbox.com for kanonen). Amazing Grace har en opptakt før første takt.
+  const FERDIG = [
+    { gruppe: "Grunnrekker", navn: "Poprekka (I–V–vi–IV)", akk: "| C | G | Am | F |", takt: 4, tempo: 90, om: "Den mest brukte rekka i popmusikken. Romertallene viser trinnene i tonearten." },
+    { gruppe: "Grunnrekker", navn: "50-tallsrekka (I–vi–IV–V)", akk: "| C | Am | F | G |", takt: 4, tempo: 80, om: "Kjent fra mange sanger fra 1950- og 60-tallet." },
+    { gruppe: "Grunnrekker", navn: "Mollrekka (vi–IV–I–V)", akk: "| Am | F | C | G |", takt: 4, tempo: 85, om: "De samme fire akkordene som poprekka, men startet på Am, så den låter mer i moll." },
+    { gruppe: "Grunnrekker", navn: "Kadens (I–IV–V–I)", akk: "| C | F | G | C |", takt: 4, tempo: 80, om: "Fra C via F og G tilbake til C. Det er den enkleste veien hjem til grunnakkorden." },
+    { gruppe: "Grunnrekker", navn: "Kvintfall (vi–ii–V–I)", akk: "| Am | Dm | G | C |", takt: 4, tempo: 80, om: "Grunntonene faller en kvint hver gang: A, D, G, C." },
+    { gruppe: "Grunnrekker", navn: "Andalusisk kadens (Am–G–F–E)", akk: "| Am | G | F | E |", takt: 4, tempo: 90, om: "En fallende rekke i moll, kjent fra flamenco og mye pop og rock." },
+    { gruppe: "Grunnrekker", navn: "ii–V–I fra jazzen", akk: "| Dm7 | G7 | Cmaj7 | Cmaj7 |", takt: 4, tempo: 90, om: "Grunnrekka i jazz, med firklanger." },
+    { gruppe: "Grunnrekker", navn: "12-takters blues i C", akk: "| C | C | C | C |\n| F | F | C | C |\n| G | F | C | G |", takt: 4, tempo: 100, om: "Tolv takter med C, F og G. Den siste G-en leder tilbake til starten." },
+    { gruppe: "Fri musikk", navn: "Pachelbels kanon (D-dur)", akk: "| D A | Bm F#m | G D | G A |", takt: 4, tempo: 60, om: "Skrevet av Johann Pachelbel en gang mellom 1680 og 1706. To akkorder i hver takt, og den samme rekka går igjen hele stykket." },
+    { gruppe: "Fri musikk", navn: "Amazing Grace (G-dur, 3/4)", akk: "| G | G | C | G |\n| G | G | D | D |\n| G | G | C | G |\n| G | D | G | G |", takt: 3, tempo: 80, om: "Tradisjonell melodi i 3/4. Sangen begynner med en opptakt før første takt." },
+  ];
+  (function () {
+    const sel = $("#pbFerdig");
+    [...new Set(FERDIG.map(f => f.gruppe))].forEach(gr => {
+      const og = document.createElement("optgroup"); og.label = gr;
+      FERDIG.forEach((f, i) => { if (f.gruppe === gr) { const o = document.createElement("option"); o.value = i; o.textContent = f.navn; og.appendChild(o); } });
+      sel.appendChild(og);
+    });
+    sel.addEventListener("change", () => {
+      const f = FERDIG[sel.value]; sel.blur();
+      if (!f) { $("#pbOm").textContent = ""; return; }
+      if (PB.spiller) pbStopp();
+      $("#pbTekst").value = f.akk; $("#pbTakt").value = String(f.takt);
+      $("#pbTempo").value = String(f.tempo); $("#pbTempoTekst").textContent = f.tempo;
+      $("#pbOm").textContent = f.om; pbVis();
+    });
+  })();
   pbVis();
 
   tegnKlaviatur(); skrivNavn();
   // Testkrok for riggen (ingen virkning for brukeren)
-  window.__piano = { trykk, slipp, slippAlle, velgAkkord, settRekke, nede, tangent, KODE, AKKORD, get oktav() { return oktav; }, flyttOktav, tolkAkkord, tolkTekst, plasser, pbStart, pbStopp, PB };
+  window.__piano = { trykk, slipp, slippAlle, velgAkkord, settRekke, nede, tangent, KODE, AKKORD, get oktav() { return oktav; }, flyttOktav, tolkAkkord, tolkTekst, plasser, pbStart, pbStopp, PB, FERDIG };
 })();
 </script>
 </body>
