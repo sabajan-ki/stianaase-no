@@ -144,6 +144,11 @@ footer a { color: inherit; }
     <label for="pbTekst" class="forklaring" style="display:block;font-weight:600;margin-bottom:.3rem">Akkorder</label>
     <textarea id="pbTekst" rows="3" spellcheck="false">| C | G | Am | F |</textarea>
     <p class="liten">Hver akkord er én takt. Står flere akkorder mellom to streker, deler de takten, som <b>| C G | Am F |</b>. <b>%</b> gjentar forrige takt. Lim inn bare akkordene, for sangteksten har opphavsrett.</p>
+    <div class="controls">
+      <button id="pbNed" type="button">♭ Halvtone ned</button>
+      <button id="pbOpp" type="button">♯ Halvtone opp</button>
+      <label>Toneart <select id="pbToneart"></select></label>
+    </div>
     <p class="pbTolket" id="pbTolket" aria-live="polite"></p>
     <div class="controls">
       <label>Tempo <input type="range" id="pbTempo" min="40" max="160" value="80"> <span id="pbTempoTekst">80</span></label>
@@ -509,7 +514,8 @@ footer a { color: inherit; }
     const { takter, feil } = tolkTekst($("#pbTekst").value);
     const navn = takter.map(t => t.map(a => a.navn).join(" "));
     $("#pbTolket").innerHTML = (takter.length ? takter.length + (takter.length === 1 ? " takt: " : " takter: ") + navn.map(n => esc(n)).join(" | ") : "Ingen akkorder ennå.")
-      + (feil.length ? ` <span class="feil">Kjenner ikke igjen: ${feil.map(esc).join(", ")}</span>` : "");
+      + (feil.length ? ` <span class="feil">Kjenner ikke igjen: ${feil.map(esc).join(", ")}</span>` : "")
+      + ($("#navnValg").value === "no" && /(^|[\s|])B(?![b♭])/.test($("#pbTekst").value) ? " · B betyr B♭ med norske tonenavn. Er akkordene hentet fra en engelsk besifring, velg engelske tonenavn øverst." : "");
     $("#pbRekke").innerHTML = navn.map((n, i) => `<span data-i="${i}">${esc(n)}</span>`).join("");
     return takter;
   }
@@ -603,7 +609,7 @@ footer a { color: inherit; }
     { gruppe: "Grunnrekker", navn: "Andalusisk kadens (Am–G–F–E)", akk: "| Am | G | F | E |", takt: 4, tempo: 90, om: "En fallende rekke i moll, kjent fra flamenco og mye pop og rock." },
     { gruppe: "Grunnrekker", navn: "ii–V–I fra jazzen", akk: "| Dm7 | G7 | Cmaj7 | Cmaj7 |", takt: 4, tempo: 90, om: "Grunnrekka i jazz, med firklanger." },
     { gruppe: "Grunnrekker", navn: "12-takters blues i C", akk: "| C | C | C | C |\n| F | F | C | C |\n| G | F | C | G |", takt: 4, tempo: 100, om: "Tolv takter med C, F og G. Den siste G-en leder tilbake til starten." },
-    { gruppe: "Fri musikk", navn: "Pachelbels kanon (D-dur)", akk: "| D A | Bm F#m | G D | G A |", takt: 4, tempo: 60, om: "Skrevet av Johann Pachelbel en gang mellom 1680 og 1706. To akkorder i hver takt, og den samme rekka går igjen hele stykket." },
+    { gruppe: "Fri musikk", navn: "Pachelbels kanon (D-dur)", akk: "| D A | Hm F#m | G D | G A |", takt: 4, tempo: 60, om: "Skrevet av Johann Pachelbel en gang mellom 1680 og 1706. To akkorder i hver takt, og den samme rekka går igjen hele stykket." },
     { gruppe: "Fri musikk", navn: "Amazing Grace (G-dur, 3/4)", akk: "| G | G | C | G |\n| G | G | D | D |\n| G | G | C | G |\n| G | D | G | G |", takt: 3, tempo: 80, om: "Tradisjonell melodi i 3/4. Sangen begynner med en opptakt før første takt." },
   ];
   (function () {
@@ -619,14 +625,72 @@ footer a { color: inherit; }
       if (PB.spiller) pbStopp();
       $("#pbTekst").value = f.akk; $("#pbTakt").value = String(f.takt);
       $("#pbTempo").value = String(f.tempo); $("#pbTempoTekst").textContent = f.tempo;
-      $("#pbOm").textContent = f.om; pbVis();
+      $("#pbOm").textContent = f.om; transponer(0);   // skriver navnene i valgt navnesett (H blir B på engelsk)
     });
   })();
-  pbVis();
+  /* ---------- Bytt toneart (06.10.26) ----------
+     Hver akkord i feltet flyttes like mange halvtoner, og taktstreker og % blir stående. Navnet skrives med ♯ i kryssarter
+     og b i b-arter (ut fra den første akkorden), med ASCII-tegnene # og b så feltet er lett å skrive videre i. */
+  // B♭ skrives alltid B♭ (B på norsk), aldri A♯. I C-dur, uten fortegn, skrives lånte akkorder som D♭, E♭ og A♭, mens F♯ beholdes (D/F♯).
+  const KRYSS_NAVN = { no: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "B", "H"], en: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "Bb", "B"] };
+  const C_NAVN = { no: ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "B", "H"], en: ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"] };
+  const B_NAVN = { no: ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "B", "H"], en: ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"] };
+  const BARTER_DUR = [5, 10, 3, 8, 1];                                          // F, B♭, E♭, A♭, D♭ skrives med b
+  function forsteAkkord(tekst) {
+    const t = tolkTekst(tekst); return t.takter.length ? t.takter[0][0] : null;
+  }
+  function erMoll(a) { return a && a.pcs.length >= 3 && ((a.pcs[1] - a.rot + 12) % 12 === 3); }
+  function brukB(rot, moll) { const dur = moll ? (rot + 3) % 12 : rot; return dur === 0 ? "c" : BARTER_DUR.indexOf(dur) !== -1; }
+  function navnPa(pc, bTegn) { const sett = $("#navnValg").value === "no" ? "no" : "en"; return (bTegn === "c" ? C_NAVN : bTegn ? B_NAVN : KRYSS_NAVN)[sett][(pc + 120) % 12]; }
+  function transponer(n, fraSett) {
+    const felt = $("#pbTekst"), navnV = $("#navnValg"), naa = navnV.value;
+    if (fraSett) navnV.value = fraSett;                                        // tolk akkordene slik de var ment
+    const forste = forsteAkkord(felt.value); if (!forste) { navnV.value = naa; return; }
+    const tolket = [];
+    const moll = erMoll(forste), nyRot = (forste.rot + n + 120) % 12, bTegn = brukB(nyRot, moll);
+    felt.value.replace(/[^\s|,%]+/g, tok => { tolket.push(tolkAkkord(tok)); return tok; });
+    navnV.value = naa;
+    let k = 0;
+    felt.value = felt.value.replace(/[^\s|,%]+/g, tok => {
+      const a = tolket[k++]; if (!a) return tok;
+      const m = tok.match(new RegExp("^([A-Ha-h])(iss|is|ess|es|ss|#|♯|b|♭|s(?!us))?(.*?)(?:\\/([A-Ha-h])(iss|is|ess|es|ss|#|♯|b|♭|s)?)?$"));
+      let rest = m[3]; if (m[1] === m[1].toLowerCase() && rest === "") rest = "m";
+      const rot = navnPa(a.rot + n, bTegn) + rest;
+      return a.bass !== a.rot ? rot + "/" + navnPa(a.bass + n, bTegn) : rot;
+    });
+    pbVis(); visToneart();
+    if (PB.spiller) PB.takter = tolkTekst(felt.value).takter;                 // avspillingen går over fra neste takt
+  }
+  function visToneart() {
+    const sel = $("#pbToneart"), forste = forsteAkkord($("#pbTekst").value);
+    if (!forste) { sel.innerHTML = '<option value="">–</option>'; sel.disabled = true; return; }
+    sel.disabled = false;
+    const moll = erMoll(forste);
+    sel.innerHTML = [...Array(12).keys()].map(pc => {
+      const navn = navnPa(pc, brukB(pc, moll));
+      const vis = moll ? navn.toLowerCase().replace("#", "♯").replace(/^([a-h])b$/, "$1♭") + "-moll" : navn.replace("#", "♯").replace(/^([A-H])b$/, "$1♭") + "-dur";
+      return `<option value="${pc}"${pc === forste.rot ? " selected" : ""}>${vis}</option>`;
+    }).join("");
+  }
+  $("#pbNed").onclick = () => transponer(-1);
+  $("#pbOpp").onclick = () => transponer(1);
+  $("#pbToneart").addEventListener("change", () => {
+    const forste = forsteAkkord($("#pbTekst").value); if (!forste) return;
+    let n = (+$("#pbToneart").value - forste.rot + 12) % 12; if (n > 6) n -= 12;   // korteste vei
+    transponer(n); $("#pbToneart").blur();
+  });
+  $("#pbTekst").addEventListener("input", visToneart);
+  let forrigeSett = $("#navnValg").value;
+  $("#navnValg").addEventListener("change", () => {
+    const fra = forrigeSett === "no" ? "no" : "kryss", til = $("#navnValg").value;
+    if ((fra === "no") !== (til === "no")) transponer(0, fra);                 // bare B/H endrer betydning mellom norsk og engelsk
+    forrigeSett = til; visToneart();
+  });
+  pbVis(); visToneart();
 
   tegnKlaviatur(); skrivNavn();
   // Testkrok for riggen (ingen virkning for brukeren)
-  window.__piano = { trykk, slipp, slippAlle, velgAkkord, settRekke, nede, tangent, KODE, AKKORD, get oktav() { return oktav; }, flyttOktav, tolkAkkord, tolkTekst, plasser, pbStart, pbStopp, PB, FERDIG };
+  window.__piano = { trykk, slipp, slippAlle, velgAkkord, settRekke, nede, tangent, KODE, AKKORD, get oktav() { return oktav; }, flyttOktav, tolkAkkord, tolkTekst, plasser, pbStart, pbStopp, PB, FERDIG, transponer };
 })();
 </script>
 </body>
