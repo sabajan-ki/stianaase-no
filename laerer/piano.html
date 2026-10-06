@@ -63,6 +63,9 @@ section.playback { background: var(--card); border: 1px solid var(--line); borde
 .pbRekke span { border: 1px solid var(--line); border-radius: 8px; padding: .15rem .55rem; font-weight: 700; font-size: .95rem; }
 .pbRekke span.naa { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .liten { color: var(--muted); font-size: .9rem; margin: .3rem 0 0; }
+details.flere { margin: 1rem 0 0; border-top: 1px solid var(--line); padding-top: .7rem; }
+details.flere summary { cursor: pointer; font-weight: 600; margin-bottom: .6rem; }
+details.flere[open] summary { margin-bottom: .8rem; }
 .key.black.chord { background: var(--teal); color: #fff; }
 .key.down { background: var(--lit) !important; color: var(--key-ink) !important; }
 .key .finger { position: absolute; top: .5rem; left: 50%; transform: translateX(-50%); width: 1.7em; height: 1.7em; border-radius: 50%;
@@ -95,7 +98,7 @@ footer a { color: inherit; }
 <header class="top"><div class="wrap"><a class="brand" href="../"><svg viewBox="0 0 32 32" role="img" aria-label="Kritt-tavle: en halvnote er lik to fjerdedeler"><rect x="1" y="2" width="30" height="23" rx="3" fill="#8a6a3e"/><rect x="3" y="4" width="26" height="19" rx="1.5" fill="#2b3a35"/><rect x="0" y="25" width="32" height="3.2" rx="1.6" fill="#6f5430"/><rect x="19" y="23.6" width="6" height="2" rx="1" fill="#f4efe6"/><rect x="26" y="23.8" width="3.6" height="1.8" rx=".9" fill="#e8806f"/><ellipse cx="9" cy="17" rx="2.1" ry="1.55" transform="rotate(-20 9 17)" fill="none" stroke="#f4efe6" stroke-width="1"/><path d="M10.9 16.7 V8" stroke="#f4efe6" stroke-width="1" stroke-linecap="round"/><text x="15.6" y="17.2" text-anchor="middle" font-family="Figtree, sans-serif" font-weight="600" font-size="8" fill="#f4efe6">=</text><text x="21.5" y="13.4" text-anchor="middle" font-family="Figtree, sans-serif" font-weight="600" font-size="6" fill="#e8806f">2</text><path d="M19 15 H24" stroke="#e8806f" stroke-width="1"/><text x="21.5" y="20.8" text-anchor="middle" font-family="Figtree, sans-serif" font-weight="600" font-size="6" fill="#e8806f">4</text></svg>Stian N. Aase</a><nav><a href="../musikk/">Musiker</a><a href="./">Lærer</a></nav></div></header>
 <main class="wrap">
   <h1>Piano</h1>
-  <p class="lead">Spill med musa, fingeren eller tastaturet. Du kan holde inne flere toner samtidig. Nederst på siden kan du lære akkordene C, F, Am og G.</p>
+  <p class="lead">Spill med musa, fingeren eller tastaturet. Du kan holde inne flere toner samtidig. Rett under klaviaturet kan du spille med akkompagnement, og lenger ned lære akkordene C, F, Am og G.</p>
 
   <div class="controls">
     <label>Lyd <select id="lyd"><option value="piano">Piano</option><option value="orgel">Orgel</option><option value="synth">Synth</option></select></label>
@@ -112,6 +115,48 @@ footer a { color: inherit; }
     <li><kbd>Z</kbd> og <kbd>X</kbd> flytter en oktav ned og opp.</li>
     <li>Norsk og engelsk bruker ulike navn på to toner. Den hvite tangenten under C heter H på norsk og B på engelsk. Den svarte tangenten under den heter B på norsk og A♯ eller B♭ på engelsk. Besifringer og noter fra nettet bruker ofte de engelske navnene.</li>
   </ul>
+
+  <section class="playback" aria-labelledby="pbTittel">
+    <h2 id="pbTittel">Spill med akkompagnement</h2>
+    <p class="forklaring">Lim inn akkordene til en sang, så spiller pianoet dem som akkompagnement mens eleven øver. Tangentene for akkorden som klinger, lyser opp.</p>
+    <div class="controls"><label>Ferdig rekke <select id="pbFerdig"><option value="">Velg, eller skriv dine egne under</option></select></label></div>
+    <p class="liten" id="pbOm" style="margin:-.4rem 0 .8rem"></p>
+    <label for="pbTekst" class="forklaring" style="display:block;font-weight:600;margin-bottom:.3rem">Akkorder</label>
+    <textarea id="pbTekst" rows="3" spellcheck="false">| C | G | Am | F |</textarea>
+    <p class="liten">Hver akkord er én takt. Står flere akkorder mellom to streker, deler de takten, som <b>| C G | Am F |</b>. <b>%</b> gjentar forrige takt, og <b>N.C.</b> er en takt uten akkord. Lim inn bare akkordene, for sangteksten har opphavsrett.</p>
+    <p class="pbTolket" id="pbTolket" aria-live="polite"></p>
+    <div class="controls">
+      <button id="pbSpill" type="button" class="on">▶ Spill</button>
+    </div>
+    <p class="pbNaa" id="pbNaa" aria-live="polite"></p>
+    <div class="pbRekke" id="pbRekke"></div>
+    <details class="flere" id="pbFlere">
+    <summary id="pbFlereTekst">Flere valg</summary>
+    <div class="controls">
+      <button id="pbNed" type="button">♭ Halvtone ned</button>
+      <button id="pbOpp" type="button">♯ Halvtone opp</button>
+      <label>Toneart <select id="pbToneart"></select></label>
+    </div>
+    <div class="controls">
+      <label>Tempo <input type="range" id="pbTempo" min="40" max="160" value="80"> <span id="pbTempoTekst">80</span></label>
+      <label>Taktart <select id="pbTakt"><option value="4">4/4</option><option value="3">3/4</option></select></label>
+      <label>Spillemåte <select id="pbMate">
+        <option value="enkel">Enkel: akkorden på 1 og 3</option>
+        <option value="pop">Pop: akkorder i åttendedeler</option>
+        <option value="ballade">Ballade: bass og brutte akkorder</option>
+        <option value="umpa">Vise, vals og gammeldans: um-pa</option>
+        <option value="reggae">Reggae: akkorder på 2 og 4</option>
+        <option value="swing">Swing: gående bass</option>
+        <option value="blues">Blues og boogie: shuffle</option>
+      </select></label>
+    </div>
+    <p class="liten" id="pbMateOm"></p>
+    <div class="controls">
+      <label><input type="checkbox" id="pbGjenta" checked> Gjenta</label>
+      <label><input type="checkbox" id="pbTell" checked> Tell inn én takt</label>
+    </div>
+    </details>
+  </section>
 
   <section class="akkorder" aria-labelledby="akkTittel">
     <h2 id="akkTittel">Akkorder</h2>
@@ -136,42 +181,6 @@ footer a { color: inherit; }
     <p class="status" id="status" aria-live="polite"></p>
   </section>
 
-  <section class="playback" aria-labelledby="pbTittel">
-    <h2 id="pbTittel">Spill med akkompagnement</h2>
-    <p class="forklaring">Lim inn akkordene til en sang, så spiller pianoet dem som akkompagnement mens eleven øver. Tangentene for akkorden som klinger, lyser opp.</p>
-    <div class="controls"><label>Ferdig rekke <select id="pbFerdig"><option value="">Velg, eller skriv dine egne under</option></select></label></div>
-    <p class="liten" id="pbOm" style="margin:-.4rem 0 .8rem"></p>
-    <label for="pbTekst" class="forklaring" style="display:block;font-weight:600;margin-bottom:.3rem">Akkorder</label>
-    <textarea id="pbTekst" rows="3" spellcheck="false">| C | G | Am | F |</textarea>
-    <p class="liten">Hver akkord er én takt. Står flere akkorder mellom to streker, deler de takten, som <b>| C G | Am F |</b>. <b>%</b> gjentar forrige takt, og <b>N.C.</b> er en takt uten akkord. Lim inn bare akkordene, for sangteksten har opphavsrett.</p>
-    <div class="controls">
-      <button id="pbNed" type="button">♭ Halvtone ned</button>
-      <button id="pbOpp" type="button">♯ Halvtone opp</button>
-      <label>Toneart <select id="pbToneart"></select></label>
-    </div>
-    <p class="pbTolket" id="pbTolket" aria-live="polite"></p>
-    <div class="controls">
-      <label>Tempo <input type="range" id="pbTempo" min="40" max="160" value="80"> <span id="pbTempoTekst">80</span></label>
-      <label>Taktart <select id="pbTakt"><option value="4">4/4</option><option value="3">3/4</option></select></label>
-      <label>Spillemåte <select id="pbMate">
-        <option value="enkel">Enkel: akkorden på 1 og 3</option>
-        <option value="pop">Pop: akkorder i åttendedeler</option>
-        <option value="ballade">Ballade: bass og brutte akkorder</option>
-        <option value="umpa">Vise, vals og gammeldans: um-pa</option>
-        <option value="reggae">Reggae: akkorder på 2 og 4</option>
-        <option value="swing">Swing: gående bass</option>
-        <option value="blues">Blues og boogie: bass 1–5–6–5</option>
-      </select></label>
-    </div>
-    <p class="liten" id="pbMateOm"></p>
-    <div class="controls">
-      <button id="pbSpill" type="button" class="on">▶ Spill</button>
-      <label><input type="checkbox" id="pbGjenta" checked> Gjenta</label>
-      <label><input type="checkbox" id="pbTell" checked> Tell inn én takt</label>
-    </div>
-    <p class="pbNaa" id="pbNaa" aria-live="polite"></p>
-    <div class="pbRekke" id="pbRekke"></div>
-  </section>
 </main>
 <footer><div class="wrap"><span>Piano · lyden lages i nettleseren, og ingenting lagres</span><span>Laget av Stian Norgård Aase · <a href="./">stianaase.no/laerer</a> · Fritt å bruke og dele med navngivelse (<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.no">CC BY-SA 4.0</a>)</span></div></footer>
 
@@ -602,7 +611,7 @@ footer a { color: inherit; }
     umpa: "Bass og akkord på skift: bass på 1 og akkord på 2 og 3 i vals, eller bass–akkord–bass–akkord i 4/4. Bassen veksler mellom grunntone og kvint.",
     reggae: "Grunntonen på 1 og korte akkorder på 2 og 4, motslaget som er typisk for reggae.",
     swing: "Gående bass i fjerdedeler som leder mot neste akkord, og korte akkorder i charleston-rytme (på 1 og like før 3).",
-    blues: "Den klassiske boogie-bassen grunntone, kvint, sekst, kvint, med akkorden på 1 og 3.",
+    blues: "Shuffle i venstre hånd: grunntone med kvint og grunntone med sekst på skift, i svingte åttendedeler. Høyre hånd tar korte akkorder på 2 og 4.",
   };
   // Bassen ligger mellom C2 og G3. naer() finner grunntonen i det leiet som ligger nærmest en referansetone.
   const BASS_LAV = 36, BASS_HOY = 55;
@@ -654,9 +663,12 @@ footer a { color: inherit; }
         akk(t0, sl * 0.55, 0.7);
         if (varer > sl * (1 + 2 / 3) + eps) akk(t0 + sl * (1 + 2 / 3), sl * 0.3, 0.6);   // charleston: 1 og «og» etter 2, svingt
       } else if (stil === "blues") {
-        const gang = [0, 7, 9, 7];                                             // grunntone, kvint, sekst, kvint
-        hvert(sl, (i, ti) => spillNote(R + gang[i % 4], ti, sl - 0.06, 0.95));
-        akk(t0, sl * 0.9, 0.7); if (varer > 2 * sl + eps) akk(t0 + 2 * sl, sl * 0.9, 0.6);
+        // Shuffle: hvert slag deles svingt (2/3 + 1/3). Grunntone med kvint på slag 1 og 3, grunntone med sekst på 2 og 4.
+        hvert(sl, (i, ti) => {
+          const topp = R + (i % 2 ? 9 : 7);
+          [0, 2 / 3].forEach((del, d) => { spillNote(R, ti + del * sl, (d ? 1 / 3 : 2 / 3) * sl - 0.04, d ? 0.7 : 0.95); spillNote(topp, ti + del * sl, (d ? 1 / 3 : 2 / 3) * sl - 0.04, d ? 0.6 : 0.8); });
+          if (i % 2 === 1) akk(ti, sl * 0.35, 0.65);                           // korte akkorder på 2 og 4
+        });
       }
     });
   }
@@ -716,8 +728,16 @@ footer a { color: inherit; }
   });
   $("#pbTempo").addEventListener("input", () => { $("#pbTempoTekst").textContent = $("#pbTempo").value; });
   ["#pbTakt", "#pbMate"].forEach(id => $(id).addEventListener("change", () => $(id).blur()));
-  const visMate = () => { $("#pbMateOm").textContent = MATE_OM[$("#pbMate").value] || ""; };
-  $("#pbMate").addEventListener("change", visMate); visMate();
+  const MATE_KORT = { enkel: "Enkel", pop: "Pop", ballade: "Ballade", umpa: "Um-pa", reggae: "Reggae", swing: "Swing", blues: "Blues" };
+  function visFlere() {
+    const ta = finnToneart(tolkTekst($("#pbTekst").value).takter);
+    const deler = [ta ? tonartNavn(ta.tonika, ta.moll) : null, "tempo " + $("#pbTempo").value, $("#pbTakt").value + "/4", MATE_KORT[$("#pbMate").value]].filter(Boolean);
+    $("#pbFlereTekst").textContent = "Flere valg · " + deler.join(" · ");
+  }
+  const visMate = () => { $("#pbMateOm").textContent = MATE_OM[$("#pbMate").value] || ""; visFlere(); };
+  $("#pbMate").addEventListener("change", visMate);
+  ["#pbTempo", "#pbTekst"].forEach(id => $(id).addEventListener("input", visFlere));
+  $("#pbTakt").addEventListener("change", visFlere);
   document.addEventListener("visibilitychange", () => { if (document.hidden && PB.spiller) pbStopp(); });
   const FERDIG = [
     { gruppe: "Grunnrekker", navn: "Poprekka (I–V–vi–IV)", stil: "pop", akk: "| C | G | Am | F |", takt: 4, tempo: 90, om: "Den mest brukte rekka i popmusikken. Romertallene viser trinnene i tonearten." },
@@ -727,7 +747,7 @@ footer a { color: inherit; }
     { gruppe: "Grunnrekker", navn: "Kvintfall (vi–ii–V–I)", stil: "swing", akk: "| Am | Dm | G | C |", takt: 4, tempo: 80, om: "Grunntonene faller en kvint hver gang: A, D, G, C." },
     { gruppe: "Grunnrekker", navn: "Andalusisk kadens (Am–G–F–E)", stil: "ballade", akk: "| Am | G | F | E |", takt: 4, tempo: 90, om: "En fallende rekke i moll, kjent fra flamenco og mye pop og rock." },
     { gruppe: "Grunnrekker", navn: "ii–V–I fra jazzen", stil: "swing", akk: "| Dm7 | G7 | Cmaj7 | Cmaj7 |", takt: 4, tempo: 90, om: "Grunnrekka i jazz, med firklanger." },
-    { gruppe: "Grunnrekker", navn: "12-takters blues i C", stil: "blues", akk: "| C | C | C | C |\n| F | F | C | C |\n| G | F | C | G |", takt: 4, tempo: 100, om: "Tolv takter med C, F og G. Den siste G-en leder tilbake til starten." },
+    { gruppe: "Grunnrekker", navn: "12-takters blues i C", stil: "blues", akk: "| C7 | C7 | C7 | C7 |\n| F7 | F7 | C7 | C7 |\n| G7 | F7 | C7 | G7 |", takt: 4, tempo: 100, om: "Tolv takter med C7, F7 og G7. Septimakkordene gir bluesklangen, og den siste G7 leder tilbake til starten." },
     { gruppe: "Fri musikk", navn: "Pachelbels kanon (D-dur)", stil: "ballade", akk: "| D A | Hm F#m | G D | G A |", takt: 4, tempo: 60, om: "Skrevet av Johann Pachelbel en gang mellom 1680 og 1706. To akkorder i hver takt, og den samme rekka går igjen hele stykket." },
     { gruppe: "Fri musikk", navn: "Amazing Grace (G-dur, 3/4)", stil: "umpa", akk: "| G | G | C | G |\n| G | G | D | D |\n| G | G | C | G |\n| G | D | G | G |", takt: 3, tempo: 80, om: "Tradisjonell melodi i 3/4. Sangen begynner med en opptakt før første takt." },
   ];
@@ -777,6 +797,7 @@ footer a { color: inherit; }
     if (!ta) { sel.innerHTML = '<option value="">–</option>'; sel.disabled = true; return; }
     sel.disabled = false;
     sel.innerHTML = [...Array(12).keys()].map(pc => `<option value="${pc}"${pc === ta.tonika ? " selected" : ""}>${tonartNavn(pc, ta.moll)}</option>`).join("");
+    visFlere();
   }
   $("#pbNed").onclick = () => transponer(-1);
   $("#pbOpp").onclick = () => transponer(1);
@@ -792,7 +813,7 @@ footer a { color: inherit; }
     if ((fra === "no") !== (til === "no")) transponer(0, fra);                 // bare B/H endrer betydning mellom norsk og engelsk
     forrigeSett = til; pbVis(); visToneart();
   });
-  pbVis(); visToneart();
+  pbVis(); visToneart(); visMate();
 
   tegnKlaviatur(); skrivNavn();
   // Testkrok for riggen (ingen virkning for brukeren)
