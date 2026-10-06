@@ -49,6 +49,20 @@ button.on { background: var(--ink); color: var(--paper); border-color: var(--ink
 .key .navn { font-size: clamp(.8rem, 1.8vw, 1.05rem); }
 .key .tast { font-size: clamp(.62rem, 1.3vw, .8rem); font-weight: 600; opacity: .55; margin-top: .15rem; }
 .key.chord { background: var(--chord); color: var(--key-ink); }
+.key.pb { box-shadow: inset 0 -10px 0 var(--red); }
+.key.white.pb { background: var(--chord); color: var(--key-ink); }
+.key.black.pb { background: var(--teal); color: #fff; }
+section.playback { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1.1rem 1.2rem 1.2rem; margin: 0 0 2rem; }
+.playback textarea { width: 100%; font: inherit; font-size: 1.1rem; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: .6rem .8rem; resize: vertical; }
+.playback textarea:focus-visible { outline: none; border-color: var(--red); }
+.playback input[type=range] { width: 9rem; accent-color: var(--red); }
+.pbTolket { font-size: .95rem; color: var(--ink-soft); margin: .4rem 0 .8rem; min-height: 1.4em; }
+.pbTolket .feil { color: var(--red); font-weight: 700; }
+.pbNaa { font-family: var(--display); font-size: 1.6rem; font-weight: 600; min-height: 1.4em; margin: .4rem 0 0; }
+.pbRekke { display: flex; flex-wrap: wrap; gap: .35rem; margin: .5rem 0 0; }
+.pbRekke span { border: 1px solid var(--line); border-radius: 8px; padding: .15rem .55rem; font-weight: 700; font-size: .95rem; }
+.pbRekke span.naa { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.liten { color: var(--muted); font-size: .9rem; margin: .3rem 0 0; }
 .key.black.chord { background: var(--teal); color: #fff; }
 .key.down { background: var(--lit) !important; color: var(--key-ink) !important; }
 .key .finger { position: absolute; top: .5rem; left: 50%; transform: translateX(-50%); width: 1.7em; height: 1.7em; border-radius: 50%;
@@ -121,6 +135,27 @@ footer a { color: inherit; }
     <div class="rekke" id="rekke"></div>
     <p class="status" id="status" aria-live="polite"></p>
   </section>
+
+  <section class="playback" aria-labelledby="pbTittel">
+    <h2 id="pbTittel">Spill med akkompagnement</h2>
+    <p class="forklaring">Lim inn akkordene til en sang, så spiller pianoet dem som akkompagnement mens eleven øver. Tangentene for akkorden som klinger, lyser opp.</p>
+    <label for="pbTekst" class="forklaring" style="display:block;font-weight:600;margin-bottom:.3rem">Akkorder</label>
+    <textarea id="pbTekst" rows="3" spellcheck="false">| C | G | Am | F |</textarea>
+    <p class="liten">Hver akkord er én takt. Står flere akkorder mellom to streker, deler de takten, som <b>| C G | Am F |</b>. <b>%</b> gjentar forrige takt. Lim inn bare akkordene, for sangteksten har opphavsrett.</p>
+    <p class="pbTolket" id="pbTolket" aria-live="polite"></p>
+    <div class="controls">
+      <label>Tempo <input type="range" id="pbTempo" min="40" max="160" value="80"> <span id="pbTempoTekst">80</span></label>
+      <label>Taktart <select id="pbTakt"><option value="4">4/4</option><option value="3">3/4</option></select></label>
+      <label>Spillemåte <select id="pbMate"><option value="enkel">Enkel: akkorder</option><option value="avansert">Avansert: bass og brutte akkorder</option></select></label>
+    </div>
+    <div class="controls">
+      <button id="pbSpill" type="button" class="on">▶ Spill</button>
+      <label><input type="checkbox" id="pbGjenta" checked> Gjenta</label>
+      <label><input type="checkbox" id="pbTell" checked> Tell inn én takt</label>
+    </div>
+    <p class="pbNaa" id="pbNaa" aria-live="polite"></p>
+    <div class="pbRekke" id="pbRekke"></div>
+  </section>
 </main>
 <footer><div class="wrap"><span>Piano · lyden lages i nettleseren, og ingenting lagres</span><span>Laget av Stian Norgård Aase · <a href="./">stianaase.no/laerer</a> · Fritt å bruke og dele med navngivelse (<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.no">CC BY-SA 4.0</a>)</span></div></footer>
 
@@ -167,9 +202,9 @@ footer a { color: inherit; }
     pianoUt.connect(gk); gk.connect(ctx.destination);
   }
   // Hver tone er én «stemme» med egne oscillatorer, så mange toner kan klinge samtidig
-  function startTone(m) {
+  function startTone(m, t0) {
     if (!ctx) return null;
-    const t = ctx.currentTime, f = hz(m), type = $("#lyd").value;
+    const t = Math.max(ctx.currentTime, t0 || 0), f = hz(m), type = $("#lyd").value;
     const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.connect(ut);
     const osc = [];
     const lag = (form, mult, niva, mal) => {
@@ -210,9 +245,9 @@ footer a { color: inherit; }
     }
     return { g, osc, slipp };
   }
-  function stoppTone(s) {
+  function stoppTone(s, t1) {
     if (!s || !ctx || s.slipp === null) return;   // pianoet klinger ut av seg selv, som i gehørtreneren
-    const t = ctx.currentTime;
+    const t = Math.max(ctx.currentTime, t1 || 0);
     // cancelAndHoldAtTime holder nivået der rampen er nå, så slippet ikke klikker (Safari og Firefox mangler den)
     if (s.g.gain.cancelAndHoldAtTime) s.g.gain.cancelAndHoldAtTime(t);
     else { s.g.gain.cancelScheduledValues(t); s.g.gain.setValueAtTime(Math.max(s.g.gain.value, 0.0001), t); }
@@ -403,9 +438,162 @@ footer a { color: inherit; }
   $("#rekkeNy").onclick = () => settRekke($("#rekkeValg").value);
   $("#rekkeValg").addEventListener("change", () => { settRekke($("#rekkeValg").value); $("#rekkeValg").blur(); });
 
+
+  /* ---------- Akkompagnement (06.10.26) ----------
+     Akkordene tolkes etter valgt navnesett (norsk B = B♭, engelsk B = H). Tidene planlegges på lydklokka (ctx.currentTime)
+     litt i forveien, så takten holder også om nettleseren er travel. */
+  const KVAL = [   // lengste først, så «m7» ikke tolkes som «m»
+    ["maj7", [0, 4, 7, 11]], ["mmaj7", [0, 3, 7, 11]], ["m7b5", [0, 3, 6, 10]], ["dim7", [0, 3, 6, 9]], ["add9", [0, 4, 7, 14]],
+    ["sus2", [0, 2, 7]], ["sus4", [0, 5, 7]], ["sus", [0, 5, 7]], ["dim", [0, 3, 6]], ["aug", [0, 4, 8]], ["m7", [0, 3, 7, 10]],
+    ["m6", [0, 3, 7, 9]], ["m9", [0, 3, 10, 14]], ["Δ", [0, 4, 7, 11]], ["ø", [0, 3, 6, 10]], ["°", [0, 3, 6]], ["+", [0, 4, 8]],
+    ["7", [0, 4, 7, 10]], ["6", [0, 4, 7, 9]], ["9", [0, 4, 10, 14]], ["m", [0, 3, 7]], ["", [0, 4, 7]],
+    ["min", [0, 3, 7]], ["-", [0, 3, 7]], ["M7", [0, 4, 7, 11]], ["7sus4", [0, 5, 7, 10]], ["maj", [0, 4, 7]],
+  ];
+  const GRUNN = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, H: 11 };
+  function tone(bokstav, fortegn) {
+    const B = bokstav.toUpperCase(); let pc;
+    if (B === "B") pc = $("#navnValg").value === "no" && !fortegn ? 10 : 11;
+    else pc = GRUNN[B];
+    if (pc === undefined) return null;
+    if (/^(#|♯|is|iss)$/.test(fortegn)) pc += 1;
+    if (/^(b|♭|es|ess|ss|s)$/.test(fortegn)) pc -= 1;   // B med fortegn regnes fra H, så «Bb» blir B♭ også på norsk
+    return (pc + 12) % 12;
+  }
+  function tolkAkkord(navn) {
+    // Fortegn: #, ♯, b, ♭, eller de norske endelsene -is/-iss (Fiss) og -es/-ess/-s/-ss (Ess, As, Ass). «s» foran «us» er sus.
+    const FT = "(iss|is|ess|es|ss|#|♯|b|♭|s(?!us))";
+    const m = navn.match(new RegExp("^([A-Ha-h])" + FT + "?(.*?)(?:\\/([A-Ha-h])" + FT + "?)?$"));
+    if (!m) return null;
+    const rot = tone(m[1], m[2] || ""); if (rot === null) return null;
+    let rest = m[3];
+    if (m[1] === m[1].toLowerCase() && rest === "") rest = "m";        // liten bokstav = moll, som i norsk tradisjon (a = Am)
+    const k = KVAL.find(([kode]) => rest === kode);
+    if (!k) return null;
+    const bass = m[4] ? tone(m[4], m[5] || "") : rot;
+    if (bass === null) return null;
+    return { navn, rot, pcs: k[1].map(x => (rot + x) % 12), bass };
+  }
+  function tolkTekst(tekst) {
+    const takter = [], feil = [];
+    const rader = tekst.includes("|") ? tekst.split("|") : tekst.split(/\s+/);
+    rader.map(r => r.trim()).filter(Boolean).forEach(r => {
+      if (r === "%") { if (takter.length) takter.push(takter[takter.length - 1]); return; }
+      const ak = r.split(/[\s,]+/).filter(Boolean).map(n => { const a = tolkAkkord(n); if (!a) feil.push(n); return a; }).filter(Boolean);
+      if (ak.length) takter.push(ak);
+    });
+    return { takter, feil };
+  }
+  // Velg plassering på klaviaturet (steg 0–17) nær forrige akkord, så hånden flytter seg minst mulig
+  function plasser(pcs, forrige) {
+    const mal = forrige ? forrige.reduce((a, b) => a + b, 0) / forrige.length : 7;
+    let best = null;
+    for (let bunn = 0; bunn <= 11; bunn++) {
+      const v = []; let x = bunn;
+      const start = pcs.indexOf(bunn % 12); if (start < 0) continue;
+      for (let i = 0; i < pcs.length; i++) {
+        const pc = pcs[(start + i) % pcs.length];
+        while (x % 12 !== pc) x++;
+        v.push(x); x++;
+      }
+      if (v[v.length - 1] > 17) continue;
+      const snitt = v.reduce((a, b) => a + b, 0) / v.length, kost = Math.abs(snitt - mal);
+      if (!best || kost < best.kost) best = { v, kost };
+    }
+    return best ? best.v : pcs.map(pc => pc);
+  }
+
+  const PB = { spiller: false, hendelser: [], idx: 0, tid: 0, timer: null, vis: [], holdt: [], forrige: null };
+  function pbVis() {
+    const { takter, feil } = tolkTekst($("#pbTekst").value);
+    const navn = takter.map(t => t.map(a => a.navn).join(" "));
+    $("#pbTolket").innerHTML = (takter.length ? takter.length + (takter.length === 1 ? " takt: " : " takter: ") + navn.map(n => esc(n)).join(" | ") : "Ingen akkorder ennå.")
+      + (feil.length ? ` <span class="feil">Kjenner ikke igjen: ${feil.map(esc).join(", ")}</span>` : "");
+    $("#pbRekke").innerHTML = navn.map((n, i) => `<span data-i="${i}">${esc(n)}</span>`).join("");
+    return takter;
+  }
+  const esc = x => String(x).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  function pbMerk(v, navn, takt) {
+    Object.values(tangent).forEach(t => t.classList.remove("pb"));
+    if (v) v.forEach(s => tangent[s] && tangent[s].classList.add("pb"));
+    $("#pbNaa").textContent = navn || "";
+    document.querySelectorAll("#pbRekke span").forEach(sp => sp.classList.toggle("naa", +sp.dataset.i === takt));
+  }
+  function klikk(t, sterk) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = "square"; o.frequency.value = sterk ? 1500 : 1000;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    o.connect(g); g.connect(ut); o.start(t); o.stop(t + 0.06);
+  }
+  function spillNote(m, t, lengde) {
+    const st = startTone(m, t);
+    if (st && st.slipp !== null) stoppTone(st, t + lengde);
+    PB.holdt.push(st); if (PB.holdt.length > 400) PB.holdt.splice(0, 200);   // de eldste har klinget ut
+  }
+  // Lager hendelsene for én takt: akkordene i takten deler slagene likt
+  function planleggTakt(takt, nr, t, slagLengde) {
+    const slag = +$("#pbTakt").value, avansert = $("#pbMate").value === "avansert";
+    const per = slag / takt.length;
+    takt.forEach((a, k) => {
+      const t0 = t + k * per * slagLengde, varer = per * slagLengde;
+      const v = plasser(a.pcs, PB.forrige); PB.forrige = v;
+      PB.vis.push(setTimeout(() => pbMerk(v, a.navn, nr), Math.max(0, (t0 - ctx.currentTime) * 1000)));
+      if (!avansert) {
+        v.forEach(s => spillNote(midi(s), t0, varer * (per >= 4 ? 0.5 : 1) - 0.03));
+        if (per >= 4) v.forEach(s => spillNote(midi(s), t0 + 2 * slagLengde, 2 * slagLengde - 0.03));   // også på 3-slaget i 4/4
+      } else {
+        const bassM = 12 * (oktav + 1) + a.bass - 12;                     // bassen en oktav under klaviaturet
+        spillNote(bassM, t0, Math.min(varer, 2 * slagLengde) - 0.03);
+        if (per >= 4) spillNote(bassM + (a.bass === a.rot ? 7 : 0), t0 + 2 * slagLengde, 2 * slagLengde - 0.03);
+        const arp = [...v, v[0] + 12].map(s => midi(s)), monster = [0, 1, 2, 3, 2, 1, 2, 1];
+        const n = Math.round(per * 2);                                   // åttendedeler
+        for (let i = 0; i < n; i++) spillNote(arp[monster[i % monster.length] % arp.length], t0 + i * slagLengde / 2, slagLengde / 2 - 0.02);
+      }
+    });
+  }
+  function pbPlanlegg() {
+    const slagLengde = 60 / +$("#pbTempo").value, slag = +$("#pbTakt").value;
+    while (PB.spiller && PB.tid < ctx.currentTime + 0.25) {
+      if (PB.idx >= PB.takter.length) {
+        if (!$("#pbGjenta").checked) { const slutt = PB.tid; PB.vis.push(setTimeout(pbStopp, Math.max(0, (slutt - ctx.currentTime) * 1000))); PB.spiller = false; return; }
+        PB.idx = 0;
+      }
+      planleggTakt(PB.takter[PB.idx], PB.idx, PB.tid, slagLengde);
+      PB.tid += slag * slagLengde; PB.idx++;
+    }
+  }
+  function pbStart() {
+    const takter = pbVis(); if (!takter.length) { $("#pbNaa").textContent = "Lim inn noen akkorder først."; return; }
+    lydPa(); if (!ctx) return;
+    pbStopp(true);
+    Object.assign(PB, { spiller: true, takter, idx: 0, forrige: null, tid: ctx.currentTime + 0.1 });
+    const slagLengde = 60 / +$("#pbTempo").value, slag = +$("#pbTakt").value;
+    if ($("#pbTell").checked) {
+      for (let i = 0; i < slag; i++) klikk(PB.tid + i * slagLengde, i === 0);
+      $("#pbNaa").textContent = "Tell inn …";
+      PB.tid += slag * slagLengde;
+    }
+    $("#pbSpill").textContent = "■ Stopp"; $("#pbSpill").classList.remove("on");
+    pbPlanlegg(); PB.timer = setInterval(pbPlanlegg, 25);
+  }
+  function pbStopp(stille) {
+    PB.spiller = false; clearInterval(PB.timer); PB.timer = null;
+    PB.vis.forEach(clearTimeout); PB.vis = [];
+    if (ctx) PB.holdt.forEach(st => { if (st && st.slipp !== null) stoppTone(st); });
+    PB.holdt = [];
+    pbMerk(null, "", -1);
+    $("#pbSpill").textContent = "▶ Spill"; $("#pbSpill").classList.add("on");
+  }
+  $("#pbSpill").onclick = () => PB.spiller ? pbStopp() : pbStart();
+  $("#pbTekst").addEventListener("input", pbVis);
+  $("#pbTempo").addEventListener("input", () => { $("#pbTempoTekst").textContent = $("#pbTempo").value; });
+  $("#navnValg").addEventListener("change", pbVis);
+  ["#pbTakt", "#pbMate"].forEach(id => $(id).addEventListener("change", () => $(id).blur()));
+  document.addEventListener("visibilitychange", () => { if (document.hidden && PB.spiller) pbStopp(); });
+  pbVis();
+
   tegnKlaviatur(); skrivNavn();
   // Testkrok for riggen (ingen virkning for brukeren)
-  window.__piano = { trykk, slipp, slippAlle, velgAkkord, settRekke, nede, tangent, KODE, AKKORD, get oktav() { return oktav; }, flyttOktav };
+  window.__piano = { trykk, slipp, slippAlle, velgAkkord, settRekke, nede, tangent, KODE, AKKORD, get oktav() { return oktav; }, flyttOktav, tolkAkkord, tolkTekst, plasser, pbStart, pbStopp, PB };
 })();
 </script>
 </body>
