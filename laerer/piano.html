@@ -149,7 +149,7 @@ footer a { color: inherit; }
   const hz = m => 440 * Math.pow(2, (m - 69) / 12);
 
   /* ---------- Lyd ---------- */
-  let ctx = null, ut = null, stoy = null;
+  let ctx = null, ut = null, pianoUt = null;
   function lydPa() {
     if (ctx) { if (ctx.state === "suspended") ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -161,22 +161,10 @@ footer a { color: inherit; }
     grense.threshold.value = -3; grense.ratio.value = 20; grense.attack.value = 0.002; grense.release.value = 0.1;
     ut = ctx.createGain(); ut.gain.value = 0.45;
     ut.connect(komp); komp.connect(grense); grense.connect(ctx.destination);
-    // Litt romklang, laget av støy som dør ut, så tonen ikke låter tørr (05.10.26). Ingen lydfiler.
-    // Konsertsal (05.10.26): 2,6 s klang med 18 ms forsinkelse, der diskanten dør raskere enn bassen (enkelt lavpass i støyen)
-    const klang = ctx.createConvolver(), sr = ctx.sampleRate, lengde = Math.floor(sr * 2.6), fors = Math.floor(sr * 0.018), ir = ctx.createBuffer(2, lengde, sr);
-    for (let ch = 0; ch < 2; ch++) {
-      const d = ir.getChannelData(ch); let lp = 0;
-      for (let i = fors; i < lengde; i++) {
-        const x = (i - fors) / (lengde - fors), a = 0.25 + 0.7 * x;          // lavpasset blir sterkere utover i halen
-        lp = lp + a * ((Math.random() * 2 - 1) - lp) * 0.5 + (1 - a) * ((Math.random() * 2 - 1) - lp);
-        d[i] = lp * Math.pow(1 - x, 2.6);
-      }
-    }
-    klang.buffer = ir;
-    const vat = ctx.createGain(); vat.gain.value = 0.26;
-    ut.connect(klang); klang.connect(vat); vat.connect(komp);
-    stoy = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.04), ctx.sampleRate);
-    const sd = stoy.getChannelData(0); for (let i = 0; i < sd.length; i++) sd[i] = Math.random() * 2 - 1;
+    // Pianolyden går gjennom samme kjede som i gehørtreneren: master 0,9 og en kompressor med standardinnstillinger (06.10.26)
+    const gk = ctx.createDynamicsCompressor();
+    pianoUt = ctx.createGain(); pianoUt.gain.value = 0.9;
+    pianoUt.connect(gk); gk.connect(ctx.destination);
   }
   // Hver tone er én «stemme» med egne oscillatorer, så mange toner kan klinge samtidig
   function startTone(m) {
@@ -191,36 +179,20 @@ footer a { color: inherit; }
     };
     let slipp = 0.25;
     if (type === "piano") {
-      // Konsertflygel (05.10.26). Hver overtone er en egen sinus med egen styrke og nedklinging:
-      // - inharmonisitet: overtone n ligger på n·f·√(1 + B·n²), og B øker oppover i diskanten (stive strenger)
-      // - hammeren treffer strengen omtrent 1/8 ut, så hver åttende overtone blir svak
-      // - høye overtoner dør raskere enn grunntonen, og bassen klinger lengst
-      // - grunntonen og 2. overtone har to strenger forstemt ±1 cent (kor-effekt uten surhet)
-      const B = 0.00012 * Math.pow(2, (m - 48) / 18);
-      const N = Math.max(3, Math.min(16, Math.floor(10000 / f)));
-      const lengdeS = Math.max(1.2, 7.5 - (m - 36) * 0.11);              // nedklinging for grunntonen i sekunder
-      g.gain.setValueAtTime(0.55, t);
-      for (let n = 1; n <= N; n++) {
-        const fn = n * f * Math.sqrt(1 + B * n * n); if (fn > 15000) break;
-        const slag = n % 8 === 0 ? 0.15 : 1;                               // hammeren 1/8 ut svekker hver åttende overtone
-        const a = 0.34 * slag / Math.pow(n, m < 52 ? 0.9 : 1.15);
-        const varer = lengdeS / (1 + 0.45 * (n - 1));
-        const strenger = n <= 2 ? [-1, 1] : [0];
-        strenger.forEach(cent => {
-          const o = ctx.createOscillator(), og = ctx.createGain();
-          o.type = "sine"; o.frequency.value = fn; o.detune.value = cent;
-          const topp = a / strenger.length;
-          og.gain.setValueAtTime(0, t); og.gain.linearRampToValueAtTime(topp, t + 0.004);
-          og.gain.exponentialRampToValueAtTime(topp * 0.45, t + 0.08 + 0.12 / n);   // rask første nedgang
-          og.gain.exponentialRampToValueAtTime(0.00008, t + Math.max(0.3, varer));   // lang hale
-          o.connect(og); og.connect(g); o.start(t); osc.push(o);
-        });
+      // Samme pianolyd som gehørtreneren (04 HTML-ressurser/musikk/musikk-gehortrener-8.html, tone()), etter Stians ønske 06.10.26:
+      // seks rene overtoner som klinger ut over 1,5 s (de høyeste raskest). Tonen klinger ut av seg selv også når tangenten slippes.
+      const varighet = 1.5, ov = [1, 0.45, 0.25, 0.12, 0.07, 0.04];
+      g.disconnect(); g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(1, t); g.connect(pianoUt);
+      for (let k = 0; k < ov.length; k++) {
+        const o = ctx.createOscillator(), og = ctx.createGain();
+        o.type = "sine"; o.frequency.value = f * (k + 1);
+        const d = varighet / Math.sqrt(k + 1);
+        og.gain.setValueAtTime(0, t);
+        og.gain.linearRampToValueAtTime(0.16 * ov[k], t + 0.006);
+        og.gain.exponentialRampToValueAtTime(0.0005, t + d);
+        o.connect(og); og.connect(g); o.start(t); o.stop(t + d + 0.05); osc.push(o);
       }
-      const h = ctx.createBufferSource(), hf = ctx.createBiquadFilter(), hg = ctx.createGain();
-      h.buffer = stoy; hf.type = "bandpass"; hf.frequency.value = Math.min(4000, f * 5); hf.Q.value = 0.9;
-      hg.gain.setValueAtTime(0.09, t); hg.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
-      h.connect(hf); hf.connect(hg); hg.connect(g); h.start(t); osc.push(h);
-      slipp = m < 48 ? 0.6 : 0.35;                                         // demperen tar bassen litt langsommere
+      return { g, osc, slipp: null };
     } else if (type === "orgel") {
       // Som trekkstenger: flere rene toner over hverandre, jevn lyd så lenge tangenten holdes
       g.gain.linearRampToValueAtTime(0.16, t + 0.03);
@@ -239,7 +211,7 @@ footer a { color: inherit; }
     return { g, osc, slipp };
   }
   function stoppTone(s) {
-    if (!s || !ctx) return;
+    if (!s || !ctx || s.slipp === null) return;   // pianoet klinger ut av seg selv, som i gehørtreneren
     const t = ctx.currentTime;
     // cancelAndHoldAtTime holder nivået der rampen er nå, så slippet ikke klikker (Safari og Firefox mangler den)
     if (s.g.gain.cancelAndHoldAtTime) s.g.gain.cancelAndHoldAtTime(t);
