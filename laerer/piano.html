@@ -153,8 +153,17 @@ footer a { color: inherit; }
     <div class="controls">
       <label>Tempo <input type="range" id="pbTempo" min="40" max="160" value="80"> <span id="pbTempoTekst">80</span></label>
       <label>Taktart <select id="pbTakt"><option value="4">4/4</option><option value="3">3/4</option></select></label>
-      <label>Spillemåte <select id="pbMate"><option value="enkel">Enkel: akkorder</option><option value="avansert">Avansert: bass og brutte akkorder</option></select></label>
+      <label>Spillemåte <select id="pbMate">
+        <option value="enkel">Enkel: akkorden på 1 og 3</option>
+        <option value="pop">Pop: akkorder i åttendedeler</option>
+        <option value="ballade">Ballade: bass og brutte akkorder</option>
+        <option value="umpa">Vise, vals og gammeldans: um-pa</option>
+        <option value="reggae">Reggae: akkorder på 2 og 4</option>
+        <option value="swing">Swing: gående bass</option>
+        <option value="blues">Blues og boogie: bass 1–5–6–5</option>
+      </select></label>
     </div>
+    <p class="liten" id="pbMateOm"></p>
     <div class="controls">
       <button id="pbSpill" type="button" class="on">▶ Spill</button>
       <label><input type="checkbox" id="pbGjenta" checked> Gjenta</label>
@@ -532,29 +541,69 @@ footer a { color: inherit; }
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
     o.connect(g); g.connect(ut); o.start(t); o.stop(t + 0.06);
   }
-  function spillNote(m, t, lengde) {
+  function spillNote(m, t, lengde, styrke) {
     const st = startTone(m, t);
+    if (st && styrke && st.slipp === null) st.g.gain.setValueAtTime(styrke, t);   // styrke bare for pianolyden; orgel og synth har egne kurver
     if (st && st.slipp !== null) stoppTone(st, t + lengde);
+    else if (st && st.slipp === null && lengde < 1.4) {                                             // demperen: korte toner i akkompagnementet slippes
+      const slutt = t + lengde;
+      st.g.gain.setValueAtTime(styrke || 1, slutt); st.g.gain.setTargetAtTime(0, slutt, 0.06);
+      st.osc.forEach(o => { try { o.stop(slutt + 0.5); } catch (_) {} });
+    }
     PB.holdt.push(st); if (PB.holdt.length > 400) PB.holdt.splice(0, 200);   // de eldste har klinget ut
   }
+  const MATE_OM = {
+    enkel: "Akkorden slås an på første slag, og i 4/4 også på tredje. Godt for å finne akkordene i ro.",
+    pop: "Jevne åttendedeler med akkorden, og grunntonen i bassen på 1 og 3. Driver låten framover.",
+    ballade: "Bass og brutte akkorder i åttendedeler. Passer til rolige sanger.",
+    umpa: "Bass og akkord på skift: bass på 1, akkord på 2 og 3 i vals, eller bass–akkord–bass–akkord i 4/4. Bassen veksler mellom grunntone og kvint.",
+    reggae: "Grunntonen på 1 og korte akkorder på 2 og 4, motslaget som er typisk for reggae.",
+    swing: "Gående bass i fjerdedeler som leder mot neste akkord, og korte akkorder i charleston-rytme (på 1 og like før 3).",
+    blues: "Den klassiske boogie-bassen grunntone, kvint, sekst, kvint, med akkorden på 1 og 3.",
+  };
   // Lager hendelsene for én takt: akkordene i takten deler slagene likt
-  function planleggTakt(takt, nr, t, slagLengde) {
-    const slag = +$("#pbTakt").value, avansert = $("#pbMate").value === "avansert";
-    const per = slag / takt.length;
+  function planleggTakt(takt, nr, t, slagLengde, nesteRot) {
+    const slag = +$("#pbTakt").value, stil = $("#pbMate").value, per = slag / takt.length, sl = slagLengde;
     takt.forEach((a, k) => {
-      const t0 = t + k * per * slagLengde, varer = per * slagLengde;
+      const t0 = t + k * per * sl, varer = per * sl;
       const v = plasser(a.pcs, PB.forrige); PB.forrige = v;
+      const neste = k + 1 < takt.length ? takt[k + 1].rot : nesteRot;
       PB.vis.push(setTimeout(() => pbMerk(v, a.navn, nr), Math.max(0, (t0 - ctx.currentTime) * 1000)));
-      if (!avansert) {
-        v.forEach(s => spillNote(midi(s), t0, varer * (per >= 4 ? 0.5 : 1) - 0.03));
-        if (per >= 4) v.forEach(s => spillNote(midi(s), t0 + 2 * slagLengde, 2 * slagLengde - 0.03));   // også på 3-slaget i 4/4
-      } else {
-        const bassM = 12 * (oktav + 1) + a.bass - 12;                     // bassen en oktav under klaviaturet
-        spillNote(bassM, t0, Math.min(varer, 2 * slagLengde) - 0.03);
-        if (per >= 4) spillNote(bassM + (a.bass === a.rot ? 7 : 0), t0 + 2 * slagLengde, 2 * slagLengde - 0.03);
+      const B = (pc, opp = 0) => 12 * (oktav + 1) + (pc >= 6 ? pc - 12 : pc) - 12 + opp;   // bassen under klaviaturet, F♯ og over en oktav lenger ned
+      const akk = (tid, lengde, styrke) => v.forEach(s => spillNote(midi(s), tid, lengde, styrke));
+      const slagIDel = Math.round(per);
+      if (stil === "enkel") {
+        akk(t0, (per >= 4 ? 2 : per) * sl - 0.03);
+        if (per >= 4) akk(t0 + 2 * sl, 2 * sl - 0.03);
+      } else if (stil === "pop") {
+        for (let i = 0; i < slagIDel; i += 2) spillNote(B(a.bass), t0 + i * sl, 2 * sl - 0.05);
+        for (let i = 0; i < slagIDel * 2; i++) akk(t0 + i * sl / 2, sl / 2 - 0.05, i % 2 ? 0.6 : 0.85);
+      } else if (stil === "ballade") {
+        spillNote(B(a.bass), t0, Math.min(varer, 2 * sl) - 0.03);
+        if (per >= 4) spillNote(B(a.bass, a.bass === a.rot ? 7 : 0), t0 + 2 * sl, 2 * sl - 0.03);
         const arp = [...v, v[0] + 12].map(s => midi(s)), monster = [0, 1, 2, 3, 2, 1, 2, 1];
-        const n = Math.round(per * 2);                                   // åttendedeler
-        for (let i = 0; i < n; i++) spillNote(arp[monster[i % monster.length] % arp.length], t0 + i * slagLengde / 2, slagLengde / 2 - 0.02);
+        for (let i = 0; i < slagIDel * 2; i++) spillNote(arp[monster[i % monster.length] % arp.length], t0 + i * sl / 2, sl / 2 - 0.02, 0.8);
+      } else if (stil === "umpa") {
+        for (let i = 0; i < slagIDel; i++) {
+          const ti = t0 + i * sl;
+          if (slag === 3) { if (i % 3 === 0) spillNote(B(a.bass), ti, sl - 0.05); else akk(ti, sl * 0.5, 0.7); }
+          else if (i % 2 === 0) spillNote(B(a.bass, (i / 2) % 2 && a.bass === a.rot ? 7 : 0), ti, sl - 0.05);
+          else akk(ti, sl * 0.5, 0.7);
+        }
+      } else if (stil === "reggae") {
+        spillNote(B(a.bass), t0, Math.min(varer, 1.5 * sl));
+        for (let i = 0; i < slagIDel; i++) if (i % 2 === 1) akk(t0 + i * sl, 0.14, 0.75);
+      } else if (stil === "swing") {
+        // Gående bass: grunntone, ters, kvint, og en halvtone under neste grunntone
+        const ters = a.pcs[1] !== undefined ? (a.pcs[1] - a.rot + 12) % 12 : 4;
+        const gang = [0, ters, 7, ((neste - a.rot + 12) % 12) - 1];
+        for (let i = 0; i < slagIDel; i++) spillNote(B(a.rot, gang[i % 4] < 0 ? gang[i % 4] + 12 : gang[i % 4]), t0 + i * sl, sl - 0.06, 0.9);
+        akk(t0, sl * 0.55, 0.7);
+        if (per >= 2) akk(t0 + sl * (1 + 2 / 3), sl * 0.3, 0.6);             // charleston: 1 og «og» etter 2, svingt
+      } else if (stil === "blues") {
+        const gang = [0, 7, 9, 7];                                             // grunntone, kvint, sekst, kvint
+        for (let i = 0; i < slagIDel; i++) spillNote(B(a.rot, gang[i % 4]), t0 + i * sl, sl - 0.06, 0.95);
+        akk(t0, sl * 0.9, 0.7); if (per >= 4) akk(t0 + 2 * sl, sl * 0.9, 0.6);
       }
     });
   }
@@ -565,7 +614,8 @@ footer a { color: inherit; }
         if (!$("#pbGjenta").checked) { const slutt = PB.tid; PB.vis.push(setTimeout(pbStopp, Math.max(0, (slutt - ctx.currentTime) * 1000))); PB.spiller = false; return; }
         PB.idx = 0;
       }
-      planleggTakt(PB.takter[PB.idx], PB.idx, PB.tid, slagLengde);
+      const nesteTakt = PB.takter[PB.idx + 1] || PB.takter[0];
+      planleggTakt(PB.takter[PB.idx], PB.idx, PB.tid, slagLengde, nesteTakt[0].rot);
       PB.tid += slag * slagLengde; PB.idx++;
     }
   }
@@ -596,21 +646,23 @@ footer a { color: inherit; }
   $("#pbTempo").addEventListener("input", () => { $("#pbTempoTekst").textContent = $("#pbTempo").value; });
   $("#navnValg").addEventListener("change", pbVis);
   ["#pbTakt", "#pbMate"].forEach(id => $(id).addEventListener("change", () => $(id).blur()));
+  const visMate = () => { $("#pbMateOm").textContent = MATE_OM[$("#pbMate").value] || ""; };
+  $("#pbMate").addEventListener("change", visMate); visMate();
   document.addEventListener("visibilitychange", () => { if (document.hidden && PB.spiller) pbStopp(); });
   // Ferdige rekker (06.10.26). Grunnrekkene er vanlige trinnfølger fra harmonilæren. Pachelbels kanon og Amazing Grace er fri musikk,
   // og akkordene er sjekket mot to uavhengige kilder hver (traditionalsongs.org og goodguitarist.com for Amazing Grace;
   // Wikipedia og guitarcomposerstoolbox.com for kanonen). Amazing Grace har en opptakt før første takt.
   const FERDIG = [
-    { gruppe: "Grunnrekker", navn: "Poprekka (I–V–vi–IV)", akk: "| C | G | Am | F |", takt: 4, tempo: 90, om: "Den mest brukte rekka i popmusikken. Romertallene viser trinnene i tonearten." },
-    { gruppe: "Grunnrekker", navn: "50-tallsrekka (I–vi–IV–V)", akk: "| C | Am | F | G |", takt: 4, tempo: 80, om: "Kjent fra mange sanger fra 1950- og 60-tallet." },
-    { gruppe: "Grunnrekker", navn: "Mollrekka (vi–IV–I–V)", akk: "| Am | F | C | G |", takt: 4, tempo: 85, om: "De samme fire akkordene som poprekka, men startet på Am, så den låter mer i moll." },
-    { gruppe: "Grunnrekker", navn: "Kadens (I–IV–V–I)", akk: "| C | F | G | C |", takt: 4, tempo: 80, om: "Fra C via F og G tilbake til C. Det er den enkleste veien hjem til grunnakkorden." },
-    { gruppe: "Grunnrekker", navn: "Kvintfall (vi–ii–V–I)", akk: "| Am | Dm | G | C |", takt: 4, tempo: 80, om: "Grunntonene faller en kvint hver gang: A, D, G, C." },
-    { gruppe: "Grunnrekker", navn: "Andalusisk kadens (Am–G–F–E)", akk: "| Am | G | F | E |", takt: 4, tempo: 90, om: "En fallende rekke i moll, kjent fra flamenco og mye pop og rock." },
-    { gruppe: "Grunnrekker", navn: "ii–V–I fra jazzen", akk: "| Dm7 | G7 | Cmaj7 | Cmaj7 |", takt: 4, tempo: 90, om: "Grunnrekka i jazz, med firklanger." },
-    { gruppe: "Grunnrekker", navn: "12-takters blues i C", akk: "| C | C | C | C |\n| F | F | C | C |\n| G | F | C | G |", takt: 4, tempo: 100, om: "Tolv takter med C, F og G. Den siste G-en leder tilbake til starten." },
-    { gruppe: "Fri musikk", navn: "Pachelbels kanon (D-dur)", akk: "| D A | Hm F#m | G D | G A |", takt: 4, tempo: 60, om: "Skrevet av Johann Pachelbel en gang mellom 1680 og 1706. To akkorder i hver takt, og den samme rekka går igjen hele stykket." },
-    { gruppe: "Fri musikk", navn: "Amazing Grace (G-dur, 3/4)", akk: "| G | G | C | G |\n| G | G | D | D |\n| G | G | C | G |\n| G | D | G | G |", takt: 3, tempo: 80, om: "Tradisjonell melodi i 3/4. Sangen begynner med en opptakt før første takt." },
+    { gruppe: "Grunnrekker", navn: "Poprekka (I–V–vi–IV)", stil: "pop", akk: "| C | G | Am | F |", takt: 4, tempo: 90, om: "Den mest brukte rekka i popmusikken. Romertallene viser trinnene i tonearten." },
+    { gruppe: "Grunnrekker", navn: "50-tallsrekka (I–vi–IV–V)", stil: "ballade", akk: "| C | Am | F | G |", takt: 4, tempo: 80, om: "Kjent fra mange sanger fra 1950- og 60-tallet." },
+    { gruppe: "Grunnrekker", navn: "Mollrekka (vi–IV–I–V)", stil: "pop", akk: "| Am | F | C | G |", takt: 4, tempo: 85, om: "De samme fire akkordene som poprekka, men startet på Am, så den låter mer i moll." },
+    { gruppe: "Grunnrekker", navn: "Kadens (I–IV–V–I)", stil: "enkel", akk: "| C | F | G | C |", takt: 4, tempo: 80, om: "Fra C via F og G tilbake til C. Det er den enkleste veien hjem til grunnakkorden." },
+    { gruppe: "Grunnrekker", navn: "Kvintfall (vi–ii–V–I)", stil: "swing", akk: "| Am | Dm | G | C |", takt: 4, tempo: 80, om: "Grunntonene faller en kvint hver gang: A, D, G, C." },
+    { gruppe: "Grunnrekker", navn: "Andalusisk kadens (Am–G–F–E)", stil: "ballade", akk: "| Am | G | F | E |", takt: 4, tempo: 90, om: "En fallende rekke i moll, kjent fra flamenco og mye pop og rock." },
+    { gruppe: "Grunnrekker", navn: "ii–V–I fra jazzen", stil: "swing", akk: "| Dm7 | G7 | Cmaj7 | Cmaj7 |", takt: 4, tempo: 90, om: "Grunnrekka i jazz, med firklanger." },
+    { gruppe: "Grunnrekker", navn: "12-takters blues i C", stil: "blues", akk: "| C | C | C | C |\n| F | F | C | C |\n| G | F | C | G |", takt: 4, tempo: 100, om: "Tolv takter med C, F og G. Den siste G-en leder tilbake til starten." },
+    { gruppe: "Fri musikk", navn: "Pachelbels kanon (D-dur)", stil: "ballade", akk: "| D A | Hm F#m | G D | G A |", takt: 4, tempo: 60, om: "Skrevet av Johann Pachelbel en gang mellom 1680 og 1706. To akkorder i hver takt, og den samme rekka går igjen hele stykket." },
+    { gruppe: "Fri musikk", navn: "Amazing Grace (G-dur, 3/4)", stil: "umpa", akk: "| G | G | C | G |\n| G | G | D | D |\n| G | G | C | G |\n| G | D | G | G |", takt: 3, tempo: 80, om: "Tradisjonell melodi i 3/4. Sangen begynner med en opptakt før første takt." },
   ];
   (function () {
     const sel = $("#pbFerdig");
@@ -625,6 +677,7 @@ footer a { color: inherit; }
       if (PB.spiller) pbStopp();
       $("#pbTekst").value = f.akk; $("#pbTakt").value = String(f.takt);
       $("#pbTempo").value = String(f.tempo); $("#pbTempoTekst").textContent = f.tempo;
+      if (f.stil) { $("#pbMate").value = f.stil; visMate(); }
       $("#pbOm").textContent = f.om; transponer(0);   // skriver navnene i valgt navnesett (H blir B på engelsk)
     });
   })();
