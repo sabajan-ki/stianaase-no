@@ -224,8 +224,28 @@ table.runder td.tall{font-variant-numeric:tabular-nums; font-weight:700}
   .ovbox{max-width:1150px}
 }
 </style>
+<link rel="stylesheet" href="../fonter/fonter.css">
+<style id="sa-ramme">
+/* Felles topplinje på stianaase.no (06.10.26), lik Piano. Lagt inn av verktoy-vask.py. */
+.sa-topp{--sa-papir:#f4efe6;--sa-blekk:#1f1b2b;--sa-linje:#ddd3c4;--sa-rod:#b3322a;background:var(--sa-papir);
+  border-bottom:1px solid var(--sa-linje);font:600 16px/1.4 "Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  letter-spacing:normal;word-spacing:normal}
+.sa-topp .sa-wrap{max-width:1040px;margin:0 auto;padding:.55rem 16px;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.sa-topp a{color:var(--sa-blekk);text-decoration:none}
+.sa-topp a:hover{color:var(--sa-rod)}
+.sa-topp a:focus-visible{outline:3px solid var(--sa-rod);outline-offset:2px;border-radius:4px}
+.sa-topp .sa-merke{display:inline-flex;align-items:center;gap:.55rem;font-family:"Fraunces",Georgia,serif;font-size:1.1rem}
+.sa-topp .sa-merke svg{width:30px;height:30px;flex:none}
+.sa-topp nav{display:flex;gap:1rem;font-size:.95rem}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .sa-topp{--sa-papir:#17141f;--sa-blekk:#f1ebe0;--sa-linje:#3a3446;--sa-rod:#e7705f}}
+:root[data-theme="dark"] .sa-topp{--sa-papir:#17141f;--sa-blekk:#f1ebe0;--sa-linje:#3a3446;--sa-rod:#e7705f}
+:root:fullscreen .sa-topp{display:none}
+@media print{.sa-topp{display:none}}
+</style>
 </head>
 <body>
+<header class="sa-topp"><div class="sa-wrap"><a class="sa-merke" href="../"><svg viewBox="0 0 32 32" role="img" aria-label="Kritt-tavle: en halvnote er lik to fjerdedeler"><rect x="1" y="2" width="30" height="23" rx="3" fill="#8a6a3e"/><rect x="3" y="4" width="26" height="19" rx="1.5" fill="#2b3a35"/><rect x="0" y="25" width="32" height="3.2" rx="1.6" fill="#6f5430"/><rect x="19" y="23.6" width="6" height="2" rx="1" fill="#f4efe6"/><rect x="26" y="23.8" width="3.6" height="1.8" rx=".9" fill="#e8806f"/><ellipse cx="9" cy="17" rx="2.1" ry="1.55" transform="rotate(-20 9 17)" fill="none" stroke="#f4efe6" stroke-width="1"/><path d="M10.9 16.7 V8" stroke="#f4efe6" stroke-width="1" stroke-linecap="round"/><text x="15.6" y="17.2" text-anchor="middle" font-family="Figtree, sans-serif" font-weight="600" font-size="8" fill="#f4efe6">=</text><text x="21.5" y="13.4" text-anchor="middle" font-family="Figtree, sans-serif" font-weight="600" font-size="6" fill="#e8806f">2</text><path d="M19 15 H24" stroke="#e8806f" stroke-width="1"/><text x="21.5" y="20.8" text-anchor="middle" font-family="Figtree, sans-serif" font-weight="600" font-size="6" fill="#e8806f">4</text></svg>Stian N. Aase</a><nav aria-label="Hovedmeny"><a href="../musikk/">Musiker</a><a href="./">Lærer</a></nav></div></header>
+
 <header class="ttu-topbanner">
   <div class="brand"><span class="logo"></span><div class="tittel"><h1>Ordtavla</h1></div></div>
   <nav aria-label="Aktiviteter">
