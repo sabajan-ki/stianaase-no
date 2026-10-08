@@ -261,3 +261,4 @@ footer.foot .wrap { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; justify-c
 @media (max-width: 500px) { .top { position: static; } }
 .tavlepar { justify-self: center; display: grid; gap: .8rem; width: min(100%, 360px); }
 .tavlepar svg { width: 100%; height: auto; }
+.hero.kort.luft { padding-bottom: 1.4rem; }
