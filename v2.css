@@ -259,3 +259,5 @@ footer.foot .wrap { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; justify-c
 @media (max-width: 759px) { .door .art:has(.par) { height: auto; } }
 @media (max-width: 799px) { .door .art:has(.par) { height: auto; } .door .art .par:not(.stablet) { flex-direction: column; gap: .6rem; } .door .art .par:not(.stablet) svg { width: min(88%, 300px); } }
 @media (max-width: 500px) { .top { position: static; } }
+.tavlepar { justify-self: center; display: grid; gap: .8rem; width: min(100%, 360px); }
+.tavlepar svg { width: 100%; height: auto; }
