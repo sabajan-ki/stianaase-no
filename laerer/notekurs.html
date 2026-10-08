@@ -368,12 +368,24 @@ footer a { color: inherit; }
       // Plassen deles etter lengden, men hver note får minst plass som en punktert åttendedel, så korte noter ikke kolliderer
       const enslig = n => !n.p && n.d < 1 && takt.filter(m => !m.p && m.d < 1).length === 1;   // åttendedel med flagg, uten bjelkepartner
       const vekt = n => (n.d >= 1 ? 1 + (n.d - 1) * 0.6 : Math.max(n.d, 0.75)) + ([3, 1.5, 0.75].includes(n.d) ? 0.3 : 0) + (enslig(n) ? 0.25 : 0);
-      const bx = x0 + ti * bredde, pad = 22, steg = (bredde - pad * 1.5) / Math.max(slag, takt.reduce((s, n) => s + vekt(n), 0));
+      const bx = x0 + ti * bredde, pad = 22, steg = (bredde - pad * 2.2) / Math.max(slag, takt.reduce((s, n) => s + vekt(n), 0));
       let pos = 0, vpos = 0;
       const plass = takt.map(n => {
         const x = takt.length === 1 && n.p ? bx + bredde / 2 - 4 : bx + pad + vpos * steg;   // en pause alene står midt i takten
         const p = { n, x, pos }; pos += n.d; vpos += vekt(n); return p;
       });
+      // Minsteavstand mellom noter: plass til punkt, flagg, hjelpelinjer og fortegn, så ingenting havner oppå hverandre
+      const ledger = n => !n.p && (n.t <= 0 || n.t >= 12);
+      for (let i = 1; i < plass.length; i++) {
+        const a = plass[i - 1].n, b = plass[i].n;
+        const gap = 26 + ([3, 1.5, 0.75].includes(a.d) ? 10 : 0) + (enslig(a) ? 10 : 0) + (ledger(a) && ledger(b) ? 6 : 0) + (b.f ? 16 : 0);
+        plass[i].x = Math.max(plass[i].x, plass[i - 1].x + gap);
+      }
+      const maks = bx + bredde - 16, sist = plass[plass.length - 1];
+      if (plass.length > 1 && sist.x > maks) {               // presses taktens noter sammen igjen hvis de ble for brede
+        const f = (maks - plass[0].x) / (sist.x - plass[0].x);
+        plass.forEach(p => { p.x = plass[0].x + (p.x - plass[0].x) * f; });
+      }
       // bjelkegrupper: noter kortere enn ett slag, i samme slag
       const grupper = [];
       plass.forEach(p => {
