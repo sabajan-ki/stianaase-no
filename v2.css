@@ -253,6 +253,6 @@ footer.foot .wrap { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; justify-c
 .door .art .par svg { height: auto; width: min(46%, 210px); }
 .door .art .par.stablet { flex-direction: column; gap: .2rem; }
 .door .art .par.stablet svg:first-child { width: min(92%, 330px); }
-.door .art .par.stablet svg:last-child { width: min(46%, 150px); }
-.door .art:has(.par) { height: 210px; padding: .9rem 0; }
+.door .art .par.stablet svg:last-child { width: min(76%, 270px); }
+.door .art:has(.par) { height: 270px; padding: .9rem 0; }
 @media (max-width: 759px) { .door .art:has(.par) { height: auto; } }
