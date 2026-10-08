@@ -237,3 +237,19 @@ footer.foot .wrap { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; justify-c
 .hero.kort { padding: clamp(1.6rem, 4vw, 2.6rem) 0 .4rem; }
 .hero.kort h1 { font-size: clamp(2rem, 4.6vw, 3.2rem); max-width: 22ch; }
 .hero.kort .lead { max-width: 46rem; }
+/* Musikksiden 08.10.26: kort presentasjon i tre linjer */
+.presentasjon { margin: 0 0 1.2rem; display: grid; gap: .9rem; max-width: 40rem; }
+.presentasjon div { display: grid; gap: .1rem; }
+@media (min-width: 640px) { .presentasjon div { grid-template-columns: 7.5rem 1fr; gap: 1rem; } }
+.presentasjon dt { font-size: .82rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--red); padding-top: .2rem; }
+.presentasjon dd { margin: 0; color: var(--ink-soft); font-size: 1.05rem; line-height: 1.55; }
+.kontaktlinje { font-size: 1rem; }
+/* Levende noter 08.10.26 */
+.noter .flyt { animation: noter-gli 14s linear infinite; }
+.noter .vipp { animation: noter-vipp 2.4s ease-in-out infinite alternate; }
+@keyframes noter-gli { from { transform: translateX(0); } to { transform: translateX(-440px); } }
+@keyframes noter-vipp { from { transform: translateY(-4px); } to { transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .noter .flyt, .noter .vipp { animation: none; } }
+.bajan-fig { margin: 0 0 2rem; display: grid; justify-items: center; gap: .5rem; }
+.bajan-fig svg { width: min(100%, 300px); height: auto; }
+.bajan-fig figcaption { color: var(--muted); font-size: .9rem; text-align: center; max-width: 30rem; }
