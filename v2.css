@@ -50,7 +50,7 @@ body {
 img, svg { max-width: 100%; }
 a { color: var(--red); text-underline-offset: 3px; text-decoration-thickness: 1px; }
 a:hover { text-decoration-thickness: 2px; }
-:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+:focus-visible { outline: 3px solid var(--red); outline-offset: 3px; border-radius: 4px; }
 
 .wrap { max-width: 68rem; margin: 0 auto; padding: 0 16px; }
 .narrow { max-width: 44rem; }
@@ -228,12 +228,13 @@ footer.foot .wrap { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; justify-c
 
 /* Forsiden 08.10.26: tre dører og «Hvem står bak» */
 @media (min-width: 980px) { .doors.three { grid-template-columns: 1fr 1fr 1fr; } }
-.tool-group[id] { scroll-margin-top: 1rem; }
+.tool-group[id] { scroll-margin-top: 5.5rem; }
+@media (max-width: 759px) { .tool-group[id] { scroll-margin-top: 8.5rem; } }
 .bak { padding: 1rem 0 3rem; }
 .bak-grid { display: grid; gap: 1.4rem; align-items: center; grid-template-columns: 1fr; }
 @media (min-width: 640px) { .bak-grid { grid-template-columns: 150px 1fr; } }
 .bak-grid img { width: 150px; height: 150px; object-fit: cover; object-position: 50% 62%; border-radius: 50%; justify-self: center; }
-.bak-grid h2 { margin-top: 0; }
+.bak-grid h2 { margin-top: 0; margin-bottom: .5rem; }
 .hero.kort { padding: clamp(1.6rem, 4vw, 2.6rem) 0 .4rem; }
 .hero.kort h1 { font-size: clamp(2rem, 4.6vw, 3.2rem); max-width: 22ch; }
 .hero.kort .lead { max-width: 46rem; }
@@ -256,3 +257,5 @@ footer.foot .wrap { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; justify-c
 .door .art .par.stablet svg:last-child { width: min(76%, 270px); }
 .door .art:has(.par) { height: 270px; padding: .9rem 0; }
 @media (max-width: 759px) { .door .art:has(.par) { height: auto; } }
+@media (max-width: 799px) { .door .art:has(.par) { height: auto; } .door .art .par:not(.stablet) { flex-direction: column; gap: .6rem; } .door .art .par:not(.stablet) svg { width: min(88%, 300px); } }
+@media (max-width: 500px) { .top { position: static; } }
