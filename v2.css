@@ -265,3 +265,4 @@ footer.foot .wrap { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; justify-c
 .bajan-fig svg.scene { width: min(100%, 340px); height: auto; }
 .trygt { max-width: 46rem; margin: 0; padding: .7rem 1rem; border-left: 4px solid var(--teal, #2f6f73); background: color-mix(in srgb, var(--card) 70%, transparent); border-radius: 0 10px 10px 0; color: var(--ink-soft); font-size: .98rem; }
 .hero .trygt { margin-top: .9rem; }
+.contact .mer { margin: .6rem 0 0; font-size: .95rem; } .contact .mer a { color: inherit; }
